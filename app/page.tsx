@@ -7,11 +7,13 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search, MapPin } from "lucide-react";
+import { useRouter } from 'next/navigation';
 
 export default function Home() {
   const [hotels, setHotels] = useState<any[]>([]);
   const [filteredHotels, setFilteredHotels] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
+  const router = useRouter();
   const [loading, setLoading] = useState(true);
 
   // Cargar hoteles
@@ -61,8 +63,8 @@ export default function Home() {
           <div className="flex gap-4 items-center bg-white border rounded-2xl p-2 shadow">
             <div className="flex-1 flex items-center gap-3 px-4">
               <MapPin className="text-gray-400" />
-              <Input 
-                placeholder="¿A dónde vas?" 
+              <Input
+                placeholder="¿A dónde vas?"
                 className="border-0 focus-visible:ring-0 text-lg py-6"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -87,8 +89,8 @@ export default function Home() {
             <Card key={hotel.id} className="overflow-hidden hover:shadow-xl transition-all group cursor-pointer">
               <div className="relative h-56 bg-gray-200">
                 {hotel.images?.[0] && (
-                  <img 
-                    src={hotel.images[0]} 
+                  <img
+                    src={hotel.images[0]}
                     alt={hotel.name}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform"
                   />
@@ -113,7 +115,9 @@ export default function Home() {
                     </span>
                     <span className="text-sm text-gray-500"> /noche</span>
                   </div>
-                  <Button>Ver hotel</Button>
+                  <Button
+                  onClick={() => router.push(`/hoteles/${hotel.id}`)}>Ver hotel
+                  </Button>
                 </div>
               </CardContent>
             </Card>
