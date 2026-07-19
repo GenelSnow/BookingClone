@@ -3,7 +3,7 @@
 import { createClient } from '@/lib/supabase/client';
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
-import { Button } from "@/components/ui/button"; 
+import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Star } from "lucide-react";
@@ -22,7 +22,7 @@ export default function HotelDetail() {
     // Hotel
     const { data: hotelData } = await supabase
       .from('hotels')
-      .select('*, rating, review_count')
+      .select('*')
       .eq('id', id)
       .single();
     // Habitaciones
@@ -44,6 +44,8 @@ export default function HotelDetail() {
   useEffect(() => {
     fetchData();
   }, [id]);
+
+  // sumit review
 
   const submitReview = async () => {
   if (!newReview.comment.trim()) {
@@ -71,21 +73,38 @@ export default function HotelDetail() {
     return;
   }
 
-  // Recargar datos frescos del hotel
-  const { data: updatedHotel } = await supabase
-    .from('hotels')
-    .select('rating, review_count')
-    .eq('id', id)
-    .single();
+  // Contar reseñas reales desde la base de datos
+  const { count } = await supabase
+    .from('reviews')
+    .select('*', { count: 'exact' })
+    .eq('hotel_id', id);
 
-  if (updatedHotel) {
-    setHotel(prev => ({ ...prev, ...updatedHotel }));
+  // Calcular promedio real
+  const { data: reviewsData } = await supabase
+    .from('reviews')
+    .select('rating')
+    .eq('hotel_id', id);
+
+  const totalRating = reviewsData.reduce((sum, r) => sum + r.rating, 0);
+  const avgRating = reviewsData.length > 0 ? totalRating / reviewsData.length : 0;
+
+  // Actualizar hotel
+  const { error: updateError } = await supabase
+    .from('hotels')
+    .update({
+      rating: parseFloat(avgRating.toFixed(1)),
+      review_count: count || 0
+    })
+    .eq('id', id);
+
+  if (updateError) {
+    console.error("Error actualizando hotel:", updateError);
   }
 
   alert("Reseña guardada correctamente");
   setNewReview({ rating: 5, comment: '' });
   await fetchData(); // Recargar todo
-};  
+};
 
   if (loading) return <div className="p-12 text-center">Cargando hotel...</div>;
   if (!hotel) return <div>Hotel no encontrado</div>;
