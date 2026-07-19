@@ -49,13 +49,6 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white border-b sticky top-0 z-50 shadow-sm">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
-          <h1 className="text-3xl font-bold text-blue-600">booking</h1>
-          <div className="text-sm text-gray-600">Proyecto de Graduación</div>
-        </div>
-      </header>
 
       {/* Search Bar */}
       <div className="bg-white py-8 shadow-sm">
