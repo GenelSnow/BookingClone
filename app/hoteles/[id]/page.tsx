@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Star } from "lucide-react";
+import { useRouter } from 'next/navigation';
 
 export default function HotelDetail() {
   const { id } = useParams();
@@ -17,6 +18,7 @@ export default function HotelDetail() {
   const [loading, setLoading] = useState(true);
 
   const supabase = createClient();
+  const router = useRouter();
 
   const fetchData = async () => {
     // Hotel
@@ -48,63 +50,63 @@ export default function HotelDetail() {
   // sumit review
 
   const submitReview = async () => {
-  if (!newReview.comment.trim()) {
-    alert("Por favor escribe un comentario");
-    return;
-  }
+    if (!newReview.comment.trim()) {
+      alert("Por favor escribe un comentario");
+      return;
+    }
 
-  const { data: user } = await supabase.auth.getUser();
-  if (!user.user) {
-    alert("Debes iniciar sesión para dejar una reseña");
-    return;
-  }
+    const { data: user } = await supabase.auth.getUser();
+    if (!user.user) {
+      alert("Debes iniciar sesión para dejar una reseña");
+      return;
+    }
 
-  // Insertar reseña
-  const { error: insertError } = await supabase.from('reviews').insert({
-    hotel_id: id,
-    user_id: user.user.id,
-    user_email: user.user.email,
-    rating: newReview.rating,
-    comment: newReview.comment,
-  });
+    // Insertar reseña
+    const { error: insertError } = await supabase.from('reviews').insert({
+      hotel_id: id,
+      user_id: user.user.id,
+      user_email: user.user.email,
+      rating: newReview.rating,
+      comment: newReview.comment,
+    });
 
-  if (insertError) {
-    alert("Error al guardar: " + insertError.message);
-    return;
-  }
+    if (insertError) {
+      alert("Error al guardar: " + insertError.message);
+      return;
+    }
 
-  // Contar reseñas reales desde la base de datos
-  const { count } = await supabase
-    .from('reviews')
-    .select('*', { count: 'exact' })
-    .eq('hotel_id', id);
+    // Contar reseñas reales desde la base de datos
+    const { count } = await supabase
+      .from('reviews')
+      .select('*', { count: 'exact' })
+      .eq('hotel_id', id);
 
-  // Calcular promedio real
-  const { data: reviewsData } = await supabase
-    .from('reviews')
-    .select('rating')
-    .eq('hotel_id', id);
+    // Calcular promedio real
+    const { data: reviewsData } = await supabase
+      .from('reviews')
+      .select('rating')
+      .eq('hotel_id', id);
 
-  const totalRating = reviewsData.reduce((sum, r) => sum + r.rating, 0);
-  const avgRating = reviewsData.length > 0 ? totalRating / reviewsData.length : 0;
+    const totalRating = reviewsData.reduce((sum, r) => sum + r.rating, 0);
+    const avgRating = reviewsData.length > 0 ? totalRating / reviewsData.length : 0;
 
-  // Actualizar hotel
-  const { error: updateError } = await supabase
-    .from('hotels')
-    .update({
-      rating: parseFloat(avgRating.toFixed(1)),
-      review_count: count || 0
-    })
-    .eq('id', id);
+    // Actualizar hotel
+    const { error: updateError } = await supabase
+      .from('hotels')
+      .update({
+        rating: parseFloat(avgRating.toFixed(1)),
+        review_count: count || 0
+      })
+      .eq('id', id);
 
-  if (updateError) {
-    console.error("Error actualizando hotel:", updateError);
-  }
+    if (updateError) {
+      console.error("Error actualizando hotel:", updateError);
+    }
 
-  alert("Reseña guardada correctamente");
-  setNewReview({ rating: 5, comment: '' });
-  await fetchData(); // Recargar todo
-};
+    alert("Reseña guardada correctamente");
+    setNewReview({ rating: 5, comment: '' });
+    await fetchData(); // Recargar todo
+  };
 
   if (loading) return <div className="p-12 text-center">Cargando hotel...</div>;
   if (!hotel) return <div>Hotel no encontrado</div>;
@@ -129,6 +131,14 @@ export default function HotelDetail() {
             ${Number(hotel.price_per_night_base).toLocaleString('es-CO')} /noche
           </p>
           <p className="text-gray-700 mt-6">{hotel.description}</p>
+
+          <Button
+            size="lg"
+            className="w-full text-lg py-7 center mt-8 bg-blue-600 hover:bg-blue-700 text-white"
+            onClick={() => router.push(`/reservar/${id}`)}
+          >
+            Reservar ahora
+          </Button>
         </div>
       </div>
 
