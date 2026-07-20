@@ -6,11 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { useRouter } from 'next/navigation';
-import { Plus, Trash2, Upload } from "lucide-react";
+import { Trash2, Edit, User } from "lucide-react";
 
 export default function AdminPage() {
     const [hotels, setHotels] = useState<any[]>([]);
+    const [currentUser, setCurrentUser] = useState<any>(null);
+
     const [newHotel, setNewHotel] = useState({
         name: '',
         city: '',
@@ -31,15 +32,27 @@ export default function AdminPage() {
     const [uploading, setUploading] = useState(false);
     const [adding, setAdding] = useState(false);
 
+
+    
+
     const supabase = createClient();
     const router = useRouter();
 
     useEffect(() => {
+        getCurrentUser();
         fetchHotels();
     }, []);
 
+    const getCurrentUser = async () => {
+        const { data: { user } } = await supabase.auth.getUser();
+        setCurrentUser(user);
+    };
+
     const fetchHotels = async () => {
-        const { data } = await supabase.from('hotels').select('*').order('created_at', { ascending: false });
+        const { data } = await supabase
+            .from('hotels')
+            .select('*, profiles(name, email)') // si tienes tabla profiles
+            .order('created_at', { ascending: false });
         setHotels(data || []);
     };
 
@@ -73,9 +86,10 @@ export default function AdminPage() {
         return [publicUrl];
     };
 
+    // Función para agregar hotel (actualizada)
     const addHotelWithRooms = async () => {
-        if (!newHotel.name || !newHotel.city || roomsToAdd.length === 0) {
-            alert("Debes agregar al menos una habitación");
+        if (!newHotel.name || !newHotel.city || roomsToAdd.length === 0 || !currentUser) {
+            alert("Faltan datos o debes estar logueado");
             return;
         }
 
@@ -84,7 +98,10 @@ export default function AdminPage() {
         // 1. Crear Hotel
         const { data: hotelData, error: hotelError } = await supabase
             .from('hotels')
-            .insert(newHotel)
+            .insert({
+                ...newHotel,
+                created_by: currentUser.id
+            })
             .select()
             .single();
 
@@ -141,6 +158,23 @@ export default function AdminPage() {
         }
         setRoomsToAdd([...roomsToAdd, { ...newRoom }]);
         setNewRoom({ name: '', price_per_night: 0, capacity: 2, bed_type: 'Queen' });
+    };
+
+    const deleteHotel = async (hotelId: string, createdBy: string) => {
+        if (createdBy !== currentUser?.id) {
+            alert("Solo el creador puede eliminar este hotel");
+            return;
+        }
+
+        if (!confirm("¿Estás seguro de eliminar este hotel?")) return;
+
+        const { error } = await supabase.from('hotels').delete().eq('id', hotelId);
+
+        if (error) alert("Error: " + error.message);
+        else {
+            alert("Hotel eliminado");
+            fetchHotels();
+        }
     };
 
     return (
@@ -318,7 +352,7 @@ export default function AdminPage() {
                     </CardContent>
                 </Card>
 
-                {/* Lista de Hoteles */}
+                {/* Lista de Hoteles Mejorada */}
                 <Card>
                     <CardHeader>
                         <CardTitle>Hoteles existentes ({hotels.length})</CardTitle>
@@ -326,9 +360,50 @@ export default function AdminPage() {
                     <CardContent>
                         <div className="space-y-4">
                             {hotels.map(hotel => (
-                                <div key={hotel.id} className="border p-4 rounded-xl">
-                                    <h3>{hotel.name}</h3>
-                                    <p>{hotel.city} • {hotel.stars} ★</p>
+                                <div key={hotel.id} className="border p-5 rounded-2xl hover:shadow-md transition-all">
+                                    <div className="flex justify-between items-start">
+                                        <div className="flex gap-4">
+                                            {hotel.images?.[0] && (
+                                                <img
+                                                    src={hotel.images[0]}
+                                                    alt={hotel.name}
+                                                    className="w-24 h-24 object-cover rounded-xl"
+                                                />
+                                            )}
+                                            <div>
+                                                <h3 className="font-semibold text-lg">{hotel.name}</h3>
+                                                <p className="text-gray-600">{hotel.city} • {hotel.stars} ★</p>
+                                                <p className="text-sm text-green-600">
+                                                    ${Number(hotel.price_per_night_base).toLocaleString('es-CO')}
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex flex-col items-end gap-2">
+                                            {hotel.created_by === currentUser?.id && (
+                                                <div className="flex gap-2">
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        onClick={() => {/* implementar edición */ }}
+                                                    >
+                                                        <Edit size={16} />
+                                                    </Button>
+                                                    <Button
+                                                        variant="destructive"
+                                                        size="sm"
+                                                        onClick={() => deleteHotel(hotel.id, hotel.created_by)}
+                                                    >
+                                                        <Trash2 size={16} />
+                                                    </Button>
+                                                </div>
+                                            )}
+                                            <div className="text-xs text-gray-500 flex items-center gap-1">
+                                                <User size={12} />
+                                                Creado por ti
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             ))}
                         </div>
