@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, MapPin, Filter } from "lucide-react";
+import { Search, MapPin, Calendar, Users, Filter } from "lucide-react";
 import { useRouter } from 'next/navigation';
 
 export default function Home() {
@@ -56,22 +56,52 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Search Bar */}
-      <div className="bg-white py-8 shadow-sm">
-        <div className="max-w-4xl mx-auto px-6">
-          <div className="flex gap-4 items-center bg-white border rounded-2xl p-2 shadow">
-            <div className="flex-1 flex items-center gap-3 px-4">
-              <MapPin className="text-gray-400" />
-              <Input
-                placeholder="¿A dónde vas?"
-                className="border-0 focus-visible:ring-0 text-lg py-6"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
+      {/* HERO - Estilo Booking.com */}
+      <div className="bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 text-white py-20">
+        <div className="max-w-5xl mx-auto px-6 text-center">
+          <h1 className="text-5xl md:text-6xl font-bold mb-6">
+            Encuentra tu hotel ideal
+          </h1>
+          <p className="text-xl md:text-2xl mb-10 text-blue-100">
+            Miles de opciones en Colombia con las mejores ofertas
+          </p>
+
+          {/* Search Bar Grande */}
+          <div className="bg-white rounded-3xl p-2 shadow-2xl max-w-4xl mx-auto">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-2">
+              <div className="flex items-center gap-3 px-6 py-4 border-r">
+                <MapPin className="text-gray-400" size={24} />
+                <div>
+                  <p className="text-xs text-gray-500">Destino</p>
+                  <Input
+                    placeholder="¿A dónde vas?"
+                    className="border-0 p-0 text-lg focus-visible:ring-0 placeholder:text-gray-400"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3 px-6 py-4 border-r">
+                <Calendar className="text-gray-400" size={24} />
+                <div>
+                  <p className="text-xs text-gray-500">Check-in - Check-out</p>
+                  <p className="text-gray-700">Selecciona fechas</p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3 px-6 py-4 border-r">
+                <Users className="text-gray-400" size={24} />
+                <div>
+                  <p className="text-xs text-gray-500">Huéspedes</p>
+                  <p className="text-gray-700">2 adultos</p>
+                </div>
+              </div>
+
+              <Button size="lg" className="h-full text-lg font-semibold rounded-2xl bg-blue-600 hover:bg-blue-700">
+                <Search className="mr-2" /> Buscar
+              </Button>
             </div>
-            <Button size="lg" className="px-10 py-6 text-lg rounded-xl">
-              <Search className="mr-2" /> Buscar
-            </Button>
           </div>
         </div>
       </div>
