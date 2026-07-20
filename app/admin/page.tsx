@@ -37,6 +37,9 @@ export default function AdminPage() {
     const [adding, setAdding] = useState(false);
     const [editingHotel, setEditingHotel] = useState<any>(null);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [editingRoom, setEditingRoom] = useState<any>(null);
+    const [isRoomModalOpen, setIsRoomModalOpen] = useState(false);
+    const [selectedHotelId, setSelectedHotelId] = useState<string | null>(null);
 
 
 
@@ -185,6 +188,34 @@ export default function AdminPage() {
             setIsEditModalOpen(false);
             setEditingHotel(null);
             fetchHotels();
+        }
+    };
+
+    const openEditRoom = (room: any) => {
+        setEditingRoom({ ...room });
+        setIsRoomModalOpen(true);
+    };
+
+    const updateRoom = async () => {
+        if (!editingRoom) return;
+
+        const { error } = await supabase
+            .from('rooms')
+            .update({
+                name: editingRoom.name,
+                type: editingRoom.type,
+                price_per_night: editingRoom.price_per_night,
+                capacity: editingRoom.capacity,
+                bed_type: editingRoom.bed_type,
+            })
+            .eq('id', editingRoom.id);
+
+        if (error) {
+            alert("Error: " + error.message);
+        } else {
+            alert("Habitación actualizada");
+            setIsRoomModalOpen(false);
+            fetchHotels(); // recargar todo
         }
     };
 
@@ -339,57 +370,49 @@ export default function AdminPage() {
                                 </Button>
                             </div>
 
-                            {/* Modal de Edición */}
-                            <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
-                                <DialogContent className="max-w-md">
+                            {/* Modal Editar Habitación */}
+                            <Dialog open={isRoomModalOpen} onOpenChange={setIsRoomModalOpen}>
+                                <DialogContent>
                                     <DialogHeader>
-                                        <DialogTitle>Editar Hotel</DialogTitle>
+                                        <DialogTitle>Editar Habitación</DialogTitle>
                                     </DialogHeader>
-
-                                    {editingHotel && (
-                                        <div className="space-y-4 py-4">
+                                    {editingRoom && (
+                                        <div className="space-y-4">
                                             <Input
-                                                placeholder="Nombre del hotel"
-                                                value={editingHotel.name}
-                                                onChange={(e) => setEditingHotel({ ...editingHotel, name: e.target.value })}
+                                                placeholder="Nombre de la habitación"
+                                                value={editingRoom.name}
+                                                onChange={e => setEditingRoom({ ...editingRoom, name: e.target.value })}
                                             />
                                             <Input
-                                                placeholder="Ciudad"
-                                                value={editingHotel.city}
-                                                onChange={(e) => setEditingHotel({ ...editingHotel, city: e.target.value })}
-                                            />
-                                            <Input
-                                                placeholder="Descripción"
-                                                value={editingHotel.description || ''}
-                                                onChange={(e) => setEditingHotel({ ...editingHotel, description: e.target.value })}
+                                                placeholder="Tipo (Estándar, Deluxe, Suite...)"
+                                                value={editingRoom.type}
+                                                onChange={e => setEditingRoom({ ...editingRoom, type: e.target.value })}
                                             />
                                             <div className="grid grid-cols-2 gap-4">
-                                                <div>
-                                                    <Label>Estrellas</Label>
-                                                    <Input
-                                                        type="number"
-                                                        min="1"
-                                                        max="5"
-                                                        value={editingHotel.stars || ''}
-                                                        onChange={(e) => setEditingHotel({ ...editingHotel, stars: parseInt(e.target.value) })}
-                                                    />
-                                                </div>
                                                 <div>
                                                     <Label>Precio por noche</Label>
                                                     <Input
                                                         type="number"
-                                                        value={editingHotel.price_per_night_base || ''}
-                                                        onChange={(e) => setEditingHotel({ ...editingHotel, price_per_night_base: parseFloat(e.target.value) })}
+                                                        value={editingRoom.price_per_night}
+                                                        onChange={e => setEditingRoom({ ...editingRoom, price_per_night: parseFloat(e.target.value) })}
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <Label>Capacidad</Label>
+                                                    <Input
+                                                        type="number"
+                                                        value={editingRoom.capacity}
+                                                        onChange={e => setEditingRoom({ ...editingRoom, capacity: parseInt(e.target.value) })}
                                                     />
                                                 </div>
                                             </div>
+                                            <Input
+                                                placeholder="Tipo de cama"
+                                                value={editingRoom.bed_type}
+                                                onChange={e => setEditingRoom({ ...editingRoom, bed_type: e.target.value })}
+                                            />
 
-                                            <div className="flex gap-3 pt-4">
-                                                <Button onClick={updateHotel} className="flex-1">Guardar Cambios</Button>
-                                                <Button variant="outline" onClick={() => setIsEditModalOpen(false)} className="flex-1">
-                                                    Cancelar
-                                                </Button>
-                                            </div>
+                                            <Button onClick={updateRoom} className="w-full">Guardar Cambios</Button>
                                         </div>
                                     )}
                                 </DialogContent>
