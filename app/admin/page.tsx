@@ -170,18 +170,7 @@ export default function AdminPage() {
     };
 
     const deleteHotel = async (hotelId: string) => {
-        if (!currentUser) {
-            alert("Debes estar logueado");
-            return;
-        }
-
-        const hotel = hotels.find(h => h.id === hotelId);
-        if (hotel?.created_by && hotel.created_by !== currentUser.id) {
-            alert("No tienes permiso para eliminar este hotel");
-            return;
-        }
-
-        if (!confirm(`¿Estás seguro de eliminar el hotel "${hotel?.name}"?`)) return;
+        if (!confirm("¿Eliminar este hotel?")) return;
 
         const { error } = await supabase
             .from('hotels')
@@ -189,11 +178,11 @@ export default function AdminPage() {
             .eq('id', hotelId);
 
         if (error) {
-            console.error(error);
-            alert("Error al eliminar: " + error.message);
+            console.error("Error completo:", error);
+            alert("Error al eliminar:\n" + error.message);
         } else {
             alert("Hotel eliminado correctamente");
-            fetchHotels(); // recargar lista
+            fetchHotels();
         }
     };
 
@@ -369,67 +358,56 @@ export default function AdminPage() {
                     </CardContent>
                 </Card>
 
-                {/* Lista de Hoteles */}
-                <Card>
+                {/* Lista de Hoteles - Scrollable */}
+                <Card className="mt-10">
                     <CardHeader>
                         <CardTitle>Hoteles existentes ({hotels.length})</CardTitle>
                     </CardHeader>
                     <CardContent>
                         {hotels.length === 0 ? (
-                            <div className="text-center py-12 text-gray-500">
-                                No hay hoteles todavía. Crea uno arriba.
-                            </div>
+                            <p className="text-center py-12 text-gray-500">No hay hoteles. Crea uno arriba.</p>
                         ) : (
-                            <div className="space-y-6">
+                            <div className="max-h-[600px] overflow-y-auto pr-2 space-y-6 custom-scrollbar">
                                 {hotels.map((hotel: any) => (
                                     <div key={hotel.id} className="border rounded-2xl p-6 hover:shadow-md transition-all bg-white">
                                         <div className="flex gap-6">
-                                            {hotel.images && hotel.images.length > 0 ? (
+                                            {hotel.images?.[0] ? (
                                                 <img
                                                     src={hotel.images[0]}
                                                     alt={hotel.name}
                                                     className="w-32 h-24 object-cover rounded-xl flex-shrink-0"
                                                 />
                                             ) : (
-                                                <div className="w-32 h-24 bg-gray-200 rounded-xl flex items-center justify-center flex-shrink-0">
-                                                    Sin imagen
+                                                <div className="w-32 h-24 bg-gray-100 rounded-xl flex items-center justify-center text-gray-400 flex-shrink-0">
+                                                    Sin foto
                                                 </div>
                                             )}
 
-                                            <div className="flex-1 min-w-0">
-                                                <h3 className="text-xl font-semibold truncate">{hotel.name}</h3>
+                                            <div className="flex-1">
+                                                <h3 className="font-semibold text-xl">{hotel.name}</h3>
                                                 <p className="text-gray-600">{hotel.city} • {hotel.stars} ★</p>
-                                                <p className="text-green-600 font-medium">
+                                                <p className="text-lg font-medium text-green-600">
                                                     ${Number(hotel.price_per_night_base || 0).toLocaleString('es-CO')}
                                                 </p>
-                                                {hotel.created_by && (
-                                                    <p className="text-xs text-gray-500 mt-2">Creado por: {hotel.created_by}</p>
-                                                )}
                                             </div>
 
-                                            <div className="flex flex-col gap-2">
-                                                {/* Botones de acción solo si es el creador */}
+                                            <div className="flex flex-col gap-3 justify-center">
                                                 <Button
                                                     variant="outline"
                                                     size="sm"
-                                                    onClick={() => {
-                                                        alert("Funcionalidad de editar en desarrollo.\n\nHotel ID: " + hotel.id);
-                                                        // Aquí después abriremos un modal o iremos a una página de edición
-                                                    }}
+                                                    onClick={() => alert("Editar próximamente - ID: " + hotel.id)}
                                                 >
-                                                    <Edit className="mr-2 h-4 w-4" /> Editar
+                                                    <Edit className="mr-2 h-4 w-4" />
+                                                    Editar
                                                 </Button>
+
                                                 <Button
                                                     variant="destructive"
                                                     size="sm"
-                                                    onClick={() => {
-                                                        if (confirm("¿Eliminar este hotel?")) {
-                                                            // temporal - solo console
-                                                            console.log("Eliminar hotel:", hotel.id);
-                                                        }
-                                                    }}
+                                                    onClick={() => deleteHotel(hotel.id)}
                                                 >
-                                                    <Trash2 className="mr-2 h-4 w-4" /> Eliminar
+                                                    <Trash2 className="mr-2 h-4 w-4" />
+                                                    Eliminar
                                                 </Button>
                                             </div>
                                         </div>
