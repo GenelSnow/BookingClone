@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, MapPin, Calendar, Users, Filter } from "lucide-react";
+import { Search, MapPin, Calendar, Users, Filter, Hotel } from "lucide-react";
 import { useRouter } from 'next/navigation';
 
 export default function Home() {
@@ -157,35 +157,52 @@ export default function Home() {
 
         {/* Resultados */}
         <div className="flex-1">
-          <h2 className="text-4xl font-semibold mb-2">Hoteles en Colombia</h2>
-          <p className="text-gray-600 mb-8">
-            {filteredHotels.length} hoteles encontrados
-          </p>
+          <div className="flex justify-between items-end mb-8">
+            <div>
+              <h2 className="text-4xl font-semibold">Hoteles en Colombia</h2>
+              <p className="text-gray-600">{filteredHotels.length} hoteles encontrados</p>
+            </div>
+            <select className="border rounded-xl px-4 py-2 text-sm">
+              <option>Ordenar por: Recomendados</option>
+              <option>Precio: Menor a Mayor</option>
+              <option>Precio: Mayor a Menor</option>
+              <option>Estrellas</option>
+            </select>
+          </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {filteredHotels.map((hotel) => (
-              <Card key={hotel.id} className="overflow-hidden hover:shadow-xl transition-all group cursor-pointer" onClick={() => router.push(`/hoteles/${hotel.id}`)}>
-                <div className="relative h-56 bg-gray-200">
-                  {hotel.images?.[0] && (
+              <Card
+                key={hotel.id}
+                className="overflow-hidden hover:shadow-2xl transition-all duration-300 group cursor-pointer"
+                onClick={() => router.push(`/hoteles/${hotel.id}`)}
+              >
+                <div className="relative h-64 bg-gray-200">
+                  {hotel.images?.[0] ? (
                     <img
                       src={hotel.images[0]}
                       alt={hotel.name}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     />
+                  ) : (
+                    <div className="w-full h-full bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center">
+                      <Hotel size={48} className="text-gray-400" />
+                    </div>
                   )}
-                  <Badge className="absolute top-4 right-4 bg-black/70">
+
+                  <Badge className="absolute top-4 right-4 bg-black/80 text-white">
                     {hotel.stars} ★
                   </Badge>
                 </div>
 
                 <CardHeader>
-                  <CardTitle>{hotel.name}</CardTitle>
-                  <p className="text-gray-600 flex items-center gap-1">
+                  <CardTitle className="line-clamp-2">{hotel.name}</CardTitle>
+                  <p className="text-gray-600 flex items-center gap-1 text-sm">
                     <MapPin size={16} /> {hotel.city}
                   </p>
                 </CardHeader>
 
-                <CardContent>
+                <CardContent className="pt-0">
                   <div className="flex justify-between items-end">
                     <div>
                       <span className="text-3xl font-bold">
@@ -193,7 +210,7 @@ export default function Home() {
                       </span>
                       <span className="text-sm text-gray-500"> /noche</span>
                     </div>
-                    <Button>Ver hotel</Button>
+                    <Button>Ver detalles</Button>
                   </div>
                 </CardContent>
               </Card>

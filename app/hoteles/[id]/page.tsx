@@ -2,23 +2,22 @@
 
 import { createClient } from '@/lib/supabase/client';
 import { useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Textarea } from "@/components/ui/textarea";
-import { Star } from "lucide-react";
-import { useRouter } from 'next/navigation';
+import { Badge } from "@/components/ui/badge";
+import { Star, MapPin, Calendar, Users } from "lucide-react";
 
 export default function HotelDetail() {
   const { id } = useParams();
+  const router = useRouter();
+  const supabase = createClient();
+
   const [hotel, setHotel] = useState<any>(null);
   const [rooms, setRooms] = useState<any[]>([]);
   const [reviews, setReviews] = useState<any[]>([]);
   const [newReview, setNewReview] = useState({ rating: 5, comment: '' });
   const [loading, setLoading] = useState(true);
-
-  const supabase = createClient();
-  const router = useRouter();
 
   const fetchData = async () => {
     // Hotel
@@ -27,8 +26,12 @@ export default function HotelDetail() {
       .select('*')
       .eq('id', id)
       .single();
+
     // Habitaciones
-    const { data: roomsData } = await supabase.from('rooms').select('*').eq('hotel_id', id);
+    const { data: roomsData } = await supabase
+      .from('rooms')
+      .select('*')
+      .eq('hotel_id', id);
 
     // Reseñas
     const { data: reviewsData } = await supabase
@@ -47,8 +50,6 @@ export default function HotelDetail() {
     fetchData();
   }, [id]);
 
-  // sumit review
-
   const submitReview = async () => {
     if (!newReview.comment.trim()) {
       alert("Por favor escribe un comentario");
@@ -61,8 +62,7 @@ export default function HotelDetail() {
       return;
     }
 
-    // Insertar reseña
-    const { error: insertError } = await supabase.from('reviews').insert({
+    const { error } = await supabase.from('reviews').insert({
       hotel_id: id,
       user_id: user.user.id,
       user_email: user.user.email,
@@ -70,120 +70,149 @@ export default function HotelDetail() {
       comment: newReview.comment,
     });
 
-    if (insertError) {
-      alert("Error al guardar: " + insertError.message);
-      return;
+    if (error) {
+      alert("Error: " + error.message);
+    } else {
+      alert("Reseña publicada correctamente");
+      setNewReview({ rating: 5, comment: '' });
+      fetchData(); // Recargar reseñas
     }
-
-    // Contar reseñas reales desde la base de datos
-    const { count } = await supabase
-      .from('reviews')
-      .select('*', { count: 'exact' })
-      .eq('hotel_id', id);
-
-    // Calcular promedio real
-    const { data: reviewsData } = await supabase
-      .from('reviews')
-      .select('rating')
-      .eq('hotel_id', id);
-
-    const totalRating = reviewsData.reduce((sum, r) => sum + r.rating, 0);
-    const avgRating = reviewsData.length > 0 ? totalRating / reviewsData.length : 0;
-
-    // Actualizar hotel
-    const { error: updateError } = await supabase
-      .from('hotels')
-      .update({
-        rating: parseFloat(avgRating.toFixed(1)),
-        review_count: count || 0
-      })
-      .eq('id', id);
-
-    if (updateError) {
-      console.error("Error actualizando hotel:", updateError);
-    }
-
-    alert("Reseña guardada correctamente");
-    setNewReview({ rating: 5, comment: '' });
-    await fetchData(); // Recargar todo
   };
 
-  if (loading) return <div className="p-12 text-center">Cargando hotel...</div>;
-  if (!hotel) return <div>Hotel no encontrado</div>;
+  if (loading) return <div className="p-12 text-center text-xl">Cargando hotel...</div>;
+  if (!hotel) return <div className="p-12 text-center">Hotel no encontrado</div>;
+
+  const avgRating = hotel.rating || 0;
 
   return (
-    <div className="max-w-6xl mx-auto p-6">
-      <div className="h-96 bg-gray-200 rounded-3xl overflow-hidden mb-8">
+    <div className="max-w-6xl mx-auto px-6 py-8">
+      {/* Imagen Principal + Info */}
+      <div className="relative h-[500px] rounded-3xl overflow-hidden mb-10">
         {hotel.images?.[0] && (
-          <img src={hotel.images[0]} alt={hotel.name} className="w-full h-full object-cover" />
+          <img 
+            src={hotel.images[0]} 
+            alt={hotel.name} 
+            className="w-full h-full object-cover" 
+          />
         )}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
+        
+        <div className="absolute bottom-8 left-8 text-white">
+          <h1 className="text-5xl font-bold mb-3">{hotel.name}</h1>
+          <p className="text-xl flex items-center gap-2">
+            <MapPin /> {hotel.city} • {hotel.country || 'Colombia'}
+          </p>
+        </div>
+
+        <Badge className="absolute top-8 right-8 bg-white text-black text-lg px-4 py-2">
+          {avgRating.toFixed(1)} ★ ({hotel.review_count || 0} reseñas)
+        </Badge>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2">
-          <h1 className="text-4xl font-bold mb-2">{hotel.name}</h1>
-          <p className="text-xl text-gray-600 mb-6">
-            {hotel.city}, {hotel.country} •
-            {hotel.rating ? hotel.rating.toFixed(1) : '0.0'} ★
-            ({hotel.review_count || 0} reseñas)
-          </p>
-          <p className="text-3xl font-bold text-green-600">
-            ${Number(hotel.price_per_night_base).toLocaleString('es-CO')} /noche
-          </p>
-          <p className="text-gray-700 mt-6">{hotel.description}</p>
+      <div className="grid lg:grid-cols-12 gap-10">
+        {/* Información Principal */}
+        <div className="lg:col-span-8">
+          <div className="prose max-w-none">
+            <p className="text-xl text-gray-700 leading-relaxed">{hotel.description}</p>
+          </div>
 
-          <Button
-            size="lg"
-            className="w-full text-lg py-7 center mt-8 bg-blue-600 hover:bg-blue-700 text-white"
-            onClick={() => router.push(`/reservar/${id}`)}
-          >
-            Reservar ahora
-          </Button>
+          {/* Habitaciones */}
+          {rooms.length > 0 && (
+            <div className="mt-12">
+              <h2 className="text-3xl font-semibold mb-6">Habitaciones disponibles</h2>
+              <div className="space-y-6">
+                {rooms.map(room => (
+                  <Card key={room.id} className="p-6">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h3 className="text-2xl font-semibold">{room.name}</h3>
+                        <p className="text-gray-600 mt-1">{room.capacity} huéspedes • {room.bed_type}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-3xl font-bold">${room.price_per_night}</p>
+                        <p className="text-sm text-gray-500">por noche</p>
+                      </div>
+                    </div>
+                    <Button 
+                      className="mt-6 w-full" 
+                      onClick={() => router.push(`/reservar/${id}`)}
+                    >
+                      Reservar esta habitación
+                    </Button>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Sidebar - Reserva Rápida */}
+        <div className="lg:col-span-4">
+          <Card className="sticky top-8">
+            <CardContent className="p-8">
+              <p className="text-4xl font-bold text-green-600">
+                ${Number(hotel.price_per_night_base).toLocaleString('es-CO')}
+              </p>
+              <p className="text-gray-500">Precio por noche aproximado</p>
+
+              <Button 
+                size="lg"
+                className="w-full mt-8 py-8 text-xl"
+                onClick={() => router.push(`/reservar/${id}`)}
+              >
+                Reservar ahora
+              </Button>
+
+              <p className="text-center text-sm text-gray-500 mt-4">
+                Cancelación gratis hasta 48 horas antes
+              </p>
+            </CardContent>
+          </Card>
         </div>
       </div>
 
       {/* Reseñas */}
-      <div className="mt-12">
-        <h2 className="text-3xl font-semibold mb-6">Reseñas ({reviews.length})</h2>
+      <div className="mt-16">
+        <h2 className="text-3xl font-semibold mb-8">Reseñas de huéspedes ({reviews.length})</h2>
 
-        <Card className="mb-10">
-          <CardContent className="p-6">
-            <h3 className="font-medium mb-4">Deja tu reseña</h3>
-
-            <div className="flex gap-1 mb-4">
-              {[1, 2, 3, 4, 5].map(star => (
+        {/* Formulario de reseña */}
+        <Card className="mb-12">
+          <CardContent className="p-8">
+            <h3 className="font-semibold mb-4">¿Qué te pareció este hotel?</h3>
+            
+            <div className="flex gap-2 mb-6">
+              {[1,2,3,4,5].map(star => (
                 <Star
                   key={star}
-                  size={28}
+                  size={36}
                   className={`cursor-pointer ${star <= newReview.rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}`}
-                  onClick={() => setNewReview({ ...newReview, rating: star })}
+                  onClick={() => setNewReview({...newReview, rating: star})}
                 />
               ))}
             </div>
 
-            <Textarea
-              placeholder="¿Qué te pareció tu experiencia?"
+            <textarea
+              className="w-full min-h-[120px] border rounded-2xl p-4"
+              placeholder="Escribe tu experiencia..."
               value={newReview.comment}
-              onChange={(e) => setNewReview({ ...newReview, comment: e.target.value })}
-              className="mb-4"
+              onChange={(e) => setNewReview({...newReview, comment: e.target.value})}
             />
 
-            <Button onClick={submitReview}>Publicar reseña</Button>
+            <Button onClick={submitReview} className="mt-4">Publicar reseña</Button>
           </CardContent>
         </Card>
 
-        <div className="space-y-6">
-          {reviews.map((review) => (
+        {/* Lista de reseñas */}
+        <div className="space-y-8">
+          {reviews.map(review => (
             <Card key={review.id}>
-              <CardContent className="p-6">
-                <div className="flex justify-between items-start">
+              <CardContent className="p-8">
+                <div className="flex justify-between">
                   <div>
-                    <p className="font-medium">
-                      {review.user_email ? review.user_email.split('@')[0] : "Usuario anónimo"}
-                    </p>
+                    <p className="font-medium">{review.user_email?.split('@')[0]}</p>
                     <div className="flex text-yellow-400 mt-1">
                       {Array.from({ length: review.rating }).map((_, i) => (
-                        <Star key={i} size={18} fill="currentColor" />
+                        <Star key={i} size={20} fill="currentColor" />
                       ))}
                     </div>
                   </div>
@@ -191,7 +220,7 @@ export default function HotelDetail() {
                     {new Date(review.created_at).toLocaleDateString('es-ES')}
                   </p>
                 </div>
-                <p className="mt-4 text-gray-700">{review.comment}</p>
+                <p className="mt-6 text-gray-700">{review.comment}</p>
               </CardContent>
             </Card>
           ))}
