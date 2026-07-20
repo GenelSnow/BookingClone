@@ -24,15 +24,26 @@ export default function Home() {
   }, []);
 
   const fetchHotels = async () => {
-    const supabase = createClient();
-    const { data } = await supabase
-      .from('hotels')
-      .select('*')
-      .order('stars', { ascending: false });
+    try {
+      const supabase = createClient();
+      const { data, error } = await supabase
+        .from('hotels')
+        .select('*')
+        .order('stars', { ascending: false });
 
-    setHotels(data || []);
-    setFilteredHotels(data || []);
-    setLoading(false);
+      if (error) {
+        console.error("Error Supabase:", error);
+        // Puedes mostrar un mensaje al usuario
+        setHotels([]);
+      } else {
+        setHotels(data || []);
+        setFilteredHotels(data || []);
+      }
+    } catch (err) {
+      console.error("Error fetching hotels:", err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
