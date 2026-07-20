@@ -42,9 +42,6 @@ export default function AdminPage() {
     const [selectedHotelId, setSelectedHotelId] = useState<string | null>(null);
 
 
-
-
-
     const supabase = createClient();
     const router = useRouter();
 
