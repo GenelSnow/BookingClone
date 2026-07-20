@@ -6,7 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { Trash2, Edit, User } from "lucide-react";
+import { useRouter } from 'next/navigation';   // ← Agrega esta línea
+import { Plus, Trash2, Upload, Edit, User } from "lucide-react";
+
 
 export default function AdminPage() {
     const [hotels, setHotels] = useState<any[]>([]);
@@ -33,7 +35,7 @@ export default function AdminPage() {
     const [adding, setAdding] = useState(false);
 
 
-    
+
 
     const supabase = createClient();
     const router = useRouter();
@@ -49,10 +51,17 @@ export default function AdminPage() {
     };
 
     const fetchHotels = async () => {
-        const { data } = await supabase
+        const { data, error } = await supabase
             .from('hotels')
-            .select('*, profiles(name, email)') // si tienes tabla profiles
+            .select('*')
             .order('created_at', { ascending: false });
+
+        if (error) {
+            console.error("Error fetching hotels:", error);
+        } else {
+            console.log("Hoteles cargados:", data?.length, data);
+        }
+
         setHotels(data || []);
     };
 
@@ -160,20 +169,31 @@ export default function AdminPage() {
         setNewRoom({ name: '', price_per_night: 0, capacity: 2, bed_type: 'Queen' });
     };
 
-    const deleteHotel = async (hotelId: string, createdBy: string) => {
-        if (createdBy !== currentUser?.id) {
-            alert("Solo el creador puede eliminar este hotel");
+    const deleteHotel = async (hotelId: string) => {
+        if (!currentUser) {
+            alert("Debes estar logueado");
             return;
         }
 
-        if (!confirm("¿Estás seguro de eliminar este hotel?")) return;
+        const hotel = hotels.find(h => h.id === hotelId);
+        if (hotel?.created_by && hotel.created_by !== currentUser.id) {
+            alert("No tienes permiso para eliminar este hotel");
+            return;
+        }
 
-        const { error } = await supabase.from('hotels').delete().eq('id', hotelId);
+        if (!confirm(`¿Estás seguro de eliminar el hotel "${hotel?.name}"?`)) return;
 
-        if (error) alert("Error: " + error.message);
-        else {
-            alert("Hotel eliminado");
-            fetchHotels();
+        const { error } = await supabase
+            .from('hotels')
+            .delete()
+            .eq('id', hotelId);
+
+        if (error) {
+            console.error(error);
+            alert("Error al eliminar: " + error.message);
+        } else {
+            alert("Hotel eliminado correctamente");
+            fetchHotels(); // recargar lista
         }
     };
 
@@ -212,7 +232,7 @@ export default function AdminPage() {
                                         type="number"
                                         min="1"
                                         max="5"
-                                        value={newHotel.stars || ''}
+                                        value={newHotel.stars ?? ''}
                                         onChange={e => setNewHotel({
                                             ...newHotel,
                                             stars: e.target.value === '' ? 4 : parseInt(e.target.value)
@@ -226,7 +246,7 @@ export default function AdminPage() {
                                         min="0"
                                         step="50000"
                                         placeholder="$90000"
-                                        value={newHotel.price_per_night_base || ''}
+                                        value={newHotel.price_per_night_base ?? ''}
                                         onChange={e => setNewHotel({
                                             ...newHotel,
                                             price_per_night_base: e.target.value === '' ? 0 : parseFloat(e.target.value)
@@ -270,7 +290,7 @@ export default function AdminPage() {
                                             min="0"
                                             step="50000"
                                             placeholder="$90000"
-                                            value={newRoom.price_per_night || ''}
+                                            value={newRoom.price_per_night ?? ''}
                                             onChange={e => setNewRoom({
                                                 ...newRoom,
                                                 price_per_night: e.target.value === '' ? 0 : parseFloat(e.target.value)
@@ -282,8 +302,8 @@ export default function AdminPage() {
                                         <Input
                                             type="number"
                                             placeholder="2"
-                                            value={newRoom.capacity}
-                                            onChange={e => setNewRoom({ ...newRoom, capacity: parseInt(e.target.value) || 2 })}
+                                            value={newRoom.capacity ?? 2}
+                                            onChange={e => setNewRoom({ ...newRoom, capacity: parseInt(e.target.value) ?? 2 })}
                                         />
                                     </div>
                                 </div>
@@ -331,12 +351,9 @@ export default function AdminPage() {
                                                     <Button
                                                         variant="destructive"
                                                         size="sm"
-                                                        onClick={() => {
-                                                            const newList = roomsToAdd.filter((_, i) => i !== index);
-                                                            setRoomsToAdd(newList);
-                                                        }}
+                                                        onClick={() => deleteHotel(hotel.id)}
                                                     >
-                                                        Eliminar
+                                                        <Trash2 className="mr-2 h-4 w-4" /> Eliminar
                                                     </Button>
                                                 </div>
                                             </div>
@@ -352,61 +369,74 @@ export default function AdminPage() {
                     </CardContent>
                 </Card>
 
-                {/* Lista de Hoteles Mejorada */}
+                {/* Lista de Hoteles */}
                 <Card>
                     <CardHeader>
                         <CardTitle>Hoteles existentes ({hotels.length})</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <div className="space-y-4">
-                            {hotels.map(hotel => (
-                                <div key={hotel.id} className="border p-5 rounded-2xl hover:shadow-md transition-all">
-                                    <div className="flex justify-between items-start">
-                                        <div className="flex gap-4">
-                                            {hotel.images?.[0] && (
+                        {hotels.length === 0 ? (
+                            <div className="text-center py-12 text-gray-500">
+                                No hay hoteles todavía. Crea uno arriba.
+                            </div>
+                        ) : (
+                            <div className="space-y-6">
+                                {hotels.map((hotel: any) => (
+                                    <div key={hotel.id} className="border rounded-2xl p-6 hover:shadow-md transition-all bg-white">
+                                        <div className="flex gap-6">
+                                            {hotel.images && hotel.images.length > 0 ? (
                                                 <img
                                                     src={hotel.images[0]}
                                                     alt={hotel.name}
-                                                    className="w-24 h-24 object-cover rounded-xl"
+                                                    className="w-32 h-24 object-cover rounded-xl flex-shrink-0"
                                                 />
-                                            )}
-                                            <div>
-                                                <h3 className="font-semibold text-lg">{hotel.name}</h3>
-                                                <p className="text-gray-600">{hotel.city} • {hotel.stars} ★</p>
-                                                <p className="text-sm text-green-600">
-                                                    ${Number(hotel.price_per_night_base).toLocaleString('es-CO')}
-                                                </p>
-                                            </div>
-                                        </div>
-
-                                        <div className="flex flex-col items-end gap-2">
-                                            {hotel.created_by === currentUser?.id && (
-                                                <div className="flex gap-2">
-                                                    <Button
-                                                        variant="outline"
-                                                        size="sm"
-                                                        onClick={() => {/* implementar edición */ }}
-                                                    >
-                                                        <Edit size={16} />
-                                                    </Button>
-                                                    <Button
-                                                        variant="destructive"
-                                                        size="sm"
-                                                        onClick={() => deleteHotel(hotel.id, hotel.created_by)}
-                                                    >
-                                                        <Trash2 size={16} />
-                                                    </Button>
+                                            ) : (
+                                                <div className="w-32 h-24 bg-gray-200 rounded-xl flex items-center justify-center flex-shrink-0">
+                                                    Sin imagen
                                                 </div>
                                             )}
-                                            <div className="text-xs text-gray-500 flex items-center gap-1">
-                                                <User size={12} />
-                                                Creado por ti
+
+                                            <div className="flex-1 min-w-0">
+                                                <h3 className="text-xl font-semibold truncate">{hotel.name}</h3>
+                                                <p className="text-gray-600">{hotel.city} • {hotel.stars} ★</p>
+                                                <p className="text-green-600 font-medium">
+                                                    ${Number(hotel.price_per_night_base || 0).toLocaleString('es-CO')}
+                                                </p>
+                                                {hotel.created_by && (
+                                                    <p className="text-xs text-gray-500 mt-2">Creado por: {hotel.created_by}</p>
+                                                )}
+                                            </div>
+
+                                            <div className="flex flex-col gap-2">
+                                                {/* Botones de acción solo si es el creador */}
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() => {
+                                                        alert("Funcionalidad de editar en desarrollo.\n\nHotel ID: " + hotel.id);
+                                                        // Aquí después abriremos un modal o iremos a una página de edición
+                                                    }}
+                                                >
+                                                    <Edit className="mr-2 h-4 w-4" /> Editar
+                                                </Button>
+                                                <Button
+                                                    variant="destructive"
+                                                    size="sm"
+                                                    onClick={() => {
+                                                        if (confirm("¿Eliminar este hotel?")) {
+                                                            // temporal - solo console
+                                                            console.log("Eliminar hotel:", hotel.id);
+                                                        }
+                                                    }}
+                                                >
+                                                    <Trash2 className="mr-2 h-4 w-4" /> Eliminar
+                                                </Button>
                                             </div>
                                         </div>
                                     </div>
-                                </div>
-                            ))}
-                        </div>
+                                ))}
+                            </div>
+                        )}
                     </CardContent>
                 </Card>
             </div>
