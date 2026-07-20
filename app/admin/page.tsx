@@ -44,18 +44,26 @@ export default function AdminPage() {
     };
 
     const uploadImage = async (hotelId: string) => {
-        if (!imageFile) return null;
+        if (!imageFile) return [];
+
+        setUploading(true);
 
         const fileExt = imageFile.name.split('.').pop();
-        const fileName = `${hotelId}-${Date.now()}.${fileExt}`;
+        const fileName = `${hotelId}-${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
 
         const { data, error } = await supabase.storage
             .from('hotel-images')
-            .upload(fileName, imageFile);
+            .upload(fileName, imageFile, {
+                cacheControl: '3600',
+                upsert: false
+            });
+
+        setUploading(false);
 
         if (error) {
-            console.error(error);
-            return null;
+            console.error("Error al subir imagen:", error);
+            alert("Error al subir la imagen: " + error.message);
+            return [];
         }
 
         const { data: { publicUrl } } = supabase.storage
@@ -89,17 +97,18 @@ export default function AdminPage() {
         const hotelId = hotelData.id;
 
         // 2. Subir imagen (si hay)
-        let images = [];
+        let images: string[] = [];
         if (imageFile) {
-            const uploadedImages = await uploadImage(hotelId);
-            if (uploadedImages) images = uploadedImages;
+            images = await uploadImage(hotelId);
         }
 
         // Actualizar hotel con imágenes
-        await supabase
-            .from('hotels')
-            .update({ images })
-            .eq('id', hotelId);
+        if (images.length > 0) {
+            await supabase
+                .from('hotels')
+                .update({ images })
+                .eq('id', hotelId);
+        }
 
         // 3. Crear habitaciones
         const roomsWithHotelId = roomsToAdd.map(room => ({
