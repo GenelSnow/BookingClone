@@ -21,13 +21,12 @@ export default function Header() {
 
     getUser();
 
-    // Listener de cambios de autenticación
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setUser(session?.user ?? null);
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [supabase]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -52,47 +51,43 @@ export default function Header() {
         </nav>
 
         {/* Usuario */}
-        <div className="flex items-center gap-4">
-          {user ? (
-            <div className="flex items-center gap-3">
-              <Link href="/perfil">
-                <Button variant="ghost" size="sm" className="flex items-center gap-2">
-                  <User size={18} />
-                  <span className="hidden md:inline">{user.email?.split('@')[0]}</span>
-                </Button>
-              </Link>
-              
-              {user.email?.includes('admin') && ( // o usa un rol en profiles
-                <Link href="/admin">
-                  <Button variant="outline" size="sm">Admin</Button>
-                </Link>
-              )}
-
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={handleLogout}
-                className="text-red-600 hover:text-red-700 hover:bg-red-50"
-              >
-                <LogOut size={18} />
+        {user && (
+          <div className="flex items-center gap-3">
+            <Link href="/perfil">
+              <Button variant="ghost" size="sm" className="flex items-center gap-2">
+                <User size={18} />
+                <span className="hidden md:inline">{user.email?.split('@')[0]}</span>
               </Button>
-            </div>
-          ) : (
-            <Link href="/login">
-              <Button>Iniciar sesión</Button>
             </Link>
-          )}
 
-          {/* Menú móvil */}
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="md:hidden"
-            onClick={() => setIsMenuOpen(!isMenuOpen)}
-          >
-            <Menu size={20} />
-          </Button>
-        </div>
+            {/* Botón Admin */}
+            {user && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={async () => {
+                  const { data: profile } = await supabase
+                    .from('profiles')
+                    .select('is_admin')
+                    .eq('id', user.id)
+                    .single();
+
+                  if (profile?.is_admin === true) {
+                    router.push('/admin');
+                  } else {
+                    alert("No tienes permisos de administrador.");
+                  }
+                }}
+              >
+                Admin
+              </Button>
+            )}
+
+            <Button variant="ghost" size="sm" onClick={handleLogout}>
+              <LogOut size={18} />
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Menú móvil */}
