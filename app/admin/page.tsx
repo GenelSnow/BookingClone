@@ -6,8 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { useRouter } from 'next/navigation';   // ← Agrega esta línea
+import { useRouter } from 'next/navigation';
 import { Plus, Trash2, Upload, Edit, User } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Pencil } from "lucide-react";
 
 
 export default function AdminPage() {
@@ -33,6 +35,8 @@ export default function AdminPage() {
     const [imageFile, setImageFile] = useState<File | null>(null);
     const [uploading, setUploading] = useState(false);
     const [adding, setAdding] = useState(false);
+    const [editingHotel, setEditingHotel] = useState<any>(null);
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
 
 
@@ -158,6 +162,30 @@ export default function AdminPage() {
         }
 
         setAdding(false);
+    };
+
+    const updateHotel = async () => {
+        if (!editingHotel) return;
+
+        const { error } = await supabase
+            .from('hotels')
+            .update({
+                name: editingHotel.name,
+                city: editingHotel.city,
+                description: editingHotel.description,
+                stars: editingHotel.stars,
+                price_per_night_base: editingHotel.price_per_night_base,
+            })
+            .eq('id', editingHotel.id);
+
+        if (error) {
+            alert("Error al actualizar: " + error.message);
+        } else {
+            alert("Hotel actualizado correctamente");
+            setIsEditModalOpen(false);
+            setEditingHotel(null);
+            fetchHotels();
+        }
     };
 
     const addRoomToList = () => {
@@ -311,6 +339,62 @@ export default function AdminPage() {
                                 </Button>
                             </div>
 
+                            {/* Modal de Edición */}
+                            <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
+                                <DialogContent className="max-w-md">
+                                    <DialogHeader>
+                                        <DialogTitle>Editar Hotel</DialogTitle>
+                                    </DialogHeader>
+
+                                    {editingHotel && (
+                                        <div className="space-y-4 py-4">
+                                            <Input
+                                                placeholder="Nombre del hotel"
+                                                value={editingHotel.name}
+                                                onChange={(e) => setEditingHotel({ ...editingHotel, name: e.target.value })}
+                                            />
+                                            <Input
+                                                placeholder="Ciudad"
+                                                value={editingHotel.city}
+                                                onChange={(e) => setEditingHotel({ ...editingHotel, city: e.target.value })}
+                                            />
+                                            <Input
+                                                placeholder="Descripción"
+                                                value={editingHotel.description || ''}
+                                                onChange={(e) => setEditingHotel({ ...editingHotel, description: e.target.value })}
+                                            />
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div>
+                                                    <Label>Estrellas</Label>
+                                                    <Input
+                                                        type="number"
+                                                        min="1"
+                                                        max="5"
+                                                        value={editingHotel.stars || ''}
+                                                        onChange={(e) => setEditingHotel({ ...editingHotel, stars: parseInt(e.target.value) })}
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <Label>Precio por noche</Label>
+                                                    <Input
+                                                        type="number"
+                                                        value={editingHotel.price_per_night_base || ''}
+                                                        onChange={(e) => setEditingHotel({ ...editingHotel, price_per_night_base: parseFloat(e.target.value) })}
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            <div className="flex gap-3 pt-4">
+                                                <Button onClick={updateHotel} className="flex-1">Guardar Cambios</Button>
+                                                <Button variant="outline" onClick={() => setIsEditModalOpen(false)} className="flex-1">
+                                                    Cancelar
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    )}
+                                </DialogContent>
+                            </Dialog>
+
                             {/* Lista de habitaciones a agregar */}
                             {roomsToAdd.length > 0 && (
                                 <div className="mt-8">
@@ -395,9 +479,12 @@ export default function AdminPage() {
                                                 <Button
                                                     variant="outline"
                                                     size="sm"
-                                                    onClick={() => alert("Editar próximamente - ID: " + hotel.id)}
+                                                    onClick={() => {
+                                                        setEditingHotel({ ...hotel });
+                                                        setIsEditModalOpen(true);
+                                                    }}
                                                 >
-                                                    <Edit className="mr-2 h-4 w-4" />
+                                                    <Pencil className="mr-2 h-4 w-4" />
                                                     Editar
                                                 </Button>
 
