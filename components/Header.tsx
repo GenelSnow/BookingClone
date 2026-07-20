@@ -31,14 +31,17 @@ export default function Header() {
     <header className="bg-white border-b sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
         <Link href="/" className="text-3xl font-bold text-blue-600">booking</Link>
-        
+
         <div className="flex items-center gap-4">
           {user ? (
             <div className="flex items-center gap-3">
+              <Link href="/perfil" className="text-blue-600 hover:underline">
+                Mi Perfil
+              </Link>
               <span className="text-sm text-gray-600">
                 Hola, {user.email?.split('@')[0]}
               </span>
-              <button 
+              <button
                 onClick={handleLogout}
                 className="text-red-600 text-sm hover:underline"
               >
