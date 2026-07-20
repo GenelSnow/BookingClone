@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Pencil } from "lucide-react";
 
 
-export default function AdminPage() {
+function AdminPage() {
     const [hotels, setHotels] = useState<any[]>([]);
     const [currentUser, setCurrentUser] = useState<any>(null);
 
@@ -520,7 +520,10 @@ export default function AdminPage() {
                                                         <Button
                                                             variant="destructive"
                                                             size="sm"
-                                                            onClick={() => deleteHotel(hotel.id)}
+                                                            onClick={() => {
+                                                                const newList = roomsToAdd.filter((_, i) => i !== index);
+                                                                setRoomsToAdd(newList);
+                                                            }}
                                                         >
                                                             <Trash2 className="mr-2 h-4 w-4" /> Eliminar
                                                         </Button>
@@ -618,3 +621,6 @@ export default function AdminPage() {
             </div>
         );
     }
+}
+
+export default AdminPage;

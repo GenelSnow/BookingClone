@@ -6,7 +6,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Star, MapPin, Calendar, Users } from "lucide-react";
+import { Star, MapPin, Calendar, Users, Hotel } from "lucide-react";
 
 export default function HotelDetail() {
   const { id } = useParams();
@@ -41,8 +41,9 @@ export default function HotelDetail() {
       .order('created_at', { ascending: false });
 
     setHotel(hotelData);
-    setRooms(roomsData || []);
     setReviews(reviewsData || []);
+    const safeRooms = roomsData || [];
+    setRooms(safeRooms);
     setLoading(false);
   };
 
