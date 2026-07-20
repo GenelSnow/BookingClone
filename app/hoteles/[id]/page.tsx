@@ -88,15 +88,19 @@ export default function HotelDetail() {
     <div className="max-w-6xl mx-auto px-6 py-8">
       {/* Imagen Principal + Info */}
       <div className="relative h-[500px] rounded-3xl overflow-hidden mb-10">
-        {hotel.images?.[0] && (
-          <img 
-            src={hotel.images[0]} 
-            alt={hotel.name} 
-            className="w-full h-full object-cover" 
+        {hotel.images && hotel.images.length > 0 ? (
+          <img
+            src={hotel.images[0]}
+            alt={hotel.name}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
           />
+        ) : (
+          <div className="w-full h-full bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center">
+            <Hotel size={48} className="text-gray-400" />
+          </div>
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
-        
+
         <div className="absolute bottom-8 left-8 text-white">
           <h1 className="text-5xl font-bold mb-3">{hotel.name}</h1>
           <p className="text-xl flex items-center gap-2">
@@ -133,8 +137,8 @@ export default function HotelDetail() {
                         <p className="text-sm text-gray-500">por noche</p>
                       </div>
                     </div>
-                    <Button 
-                      className="mt-6 w-full" 
+                    <Button
+                      className="mt-6 w-full"
                       onClick={() => router.push(`/reservar/${id}`)}
                     >
                       Reservar esta habitación
@@ -155,7 +159,7 @@ export default function HotelDetail() {
               </p>
               <p className="text-gray-500">Precio por noche aproximado</p>
 
-              <Button 
+              <Button
                 size="lg"
                 className="w-full mt-8 py-8 text-xl"
                 onClick={() => router.push(`/reservar/${id}`)}
@@ -179,14 +183,14 @@ export default function HotelDetail() {
         <Card className="mb-12">
           <CardContent className="p-8">
             <h3 className="font-semibold mb-4">¿Qué te pareció este hotel?</h3>
-            
+
             <div className="flex gap-2 mb-6">
-              {[1,2,3,4,5].map(star => (
+              {[1, 2, 3, 4, 5].map(star => (
                 <Star
                   key={star}
                   size={36}
                   className={`cursor-pointer ${star <= newReview.rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}`}
-                  onClick={() => setNewReview({...newReview, rating: star})}
+                  onClick={() => setNewReview({ ...newReview, rating: star })}
                 />
               ))}
             </div>
@@ -195,7 +199,7 @@ export default function HotelDetail() {
               className="w-full min-h-[120px] border rounded-2xl p-4"
               placeholder="Escribe tu experiencia..."
               value={newReview.comment}
-              onChange={(e) => setNewReview({...newReview, comment: e.target.value})}
+              onChange={(e) => setNewReview({ ...newReview, comment: e.target.value })}
             />
 
             <Button onClick={submitReview} className="mt-4">Publicar reseña</Button>

@@ -18,9 +18,10 @@ export default function AdminPage() {
         stars: 4,
         price_per_night_base: 0,
     });
+
     const [newRoom, setNewRoom] = useState({
         name: '',
-        type: '',
+        type: 'Estándar',
         price_per_night: 0,
         capacity: 2,
         bed_type: 'Queen',
@@ -164,11 +165,30 @@ export default function AdminPage() {
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-2">
                                     <Label>Estrellas (1-5)</Label>
-                                    <Input type="number" min="1" max="5" value={newHotel.stars} onChange={e => setNewHotel({ ...newHotel, stars: parseInt(e.target.value) })} />
+                                    <Input
+                                        type="number"
+                                        min="1"
+                                        max="5"
+                                        value={newHotel.stars || ''}
+                                        onChange={e => setNewHotel({
+                                            ...newHotel,
+                                            stars: e.target.value === '' ? 4 : parseInt(e.target.value)
+                                        })}
+                                    />
                                 </div>
                                 <div className="space-y-2">
                                     <Label>Precio base por noche (COP)</Label>
-                                    <Input type="number" placeholder="90000" value={newHotel.price_per_night_base} onChange={e => setNewHotel({ ...newHotel, price_per_night_base: parseFloat(e.target.value) })} />
+                                    <Input
+                                        type="number"
+                                        min="0"
+                                        step="50000"
+                                        placeholder="$90000"
+                                        value={newHotel.price_per_night_base || ''}
+                                        onChange={e => setNewHotel({
+                                            ...newHotel,
+                                            price_per_night_base: e.target.value === '' ? 0 : parseFloat(e.target.value)
+                                        })}
+                                    />
                                 </div>
                             </div>
 
@@ -204,9 +224,14 @@ export default function AdminPage() {
                                         <Label>Precio por noche</Label>
                                         <Input
                                             type="number"
-                                            placeholder="180000"
-                                            value={newRoom.price_per_night}
-                                            onChange={e => setNewRoom({ ...newRoom, price_per_night: parseFloat(e.target.value) || 0 })}
+                                            min="0"
+                                            step="50000"
+                                            placeholder="$90000"
+                                            value={newRoom.price_per_night || ''}
+                                            onChange={e => setNewRoom({
+                                                ...newRoom,
+                                                price_per_night: e.target.value === '' ? 0 : parseFloat(e.target.value)
+                                            })}
                                         />
                                     </div>
                                     <div>

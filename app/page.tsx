@@ -178,16 +178,12 @@ export default function Home() {
                 onClick={() => router.push(`/hoteles/${hotel.id}`)}
               >
                 <div className="relative h-64 bg-gray-200">
-                  {hotel.images?.[0] ? (
+                  {hotel.images?.[0] && (
                     <img
                       src={hotel.images[0]}
                       alt={hotel.name}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      className="w-full h-full object-cover"
                     />
-                  ) : (
-                    <div className="w-full h-full bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center">
-                      <Hotel size={48} className="text-gray-400" />
-                    </div>
                   )}
 
                   <Badge className="absolute top-4 right-4 bg-black/80 text-white">
