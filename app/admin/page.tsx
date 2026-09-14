@@ -30,13 +30,6 @@ function AdminPage() {
         price_per_night_base: 0,
     });
 
-    const [searchTerm, setSearchTerm] = useState('');
-    const [sortOrder, setSortOrder] = useState<'az' | 'za'>('az');
-    const [filterCountry, setFilterCountry] = useState('');
-    const [filterCity, setFilterCity] = useState('');
-    // const [filterRegion, setFilterRegion] = useState(''); // descomenta si agregas la columna
-    const [userRole, setUserRole] = useState<string>('usuario');
-
     const [newRoom, setNewRoom] = useState({
         name: '',
         type: 'Estándar',
@@ -54,6 +47,13 @@ function AdminPage() {
     const [isRoomModalOpen, setIsRoomModalOpen] = useState(false);
     const [selectedHotelId, setSelectedHotelId] = useState<string | null>(null);
 
+    const [searchTerm, setSearchTerm] = useState('');
+    const [sortOrder, setSortOrder] = useState<'az' | 'za'>('az');
+    const [filterCountry, setFilterCountry] = useState('');
+    const [filterCity, setFilterCity] = useState('');
+    // const [filterRegion, setFilterRegion] = useState(''); // descomenta si agregas la columna
+    const [userRole, setUserRole] = useState<string>('usuario');
+
 
     const supabase = createClient();
     const router = useRouter();
@@ -67,17 +67,72 @@ function AdminPage() {
         return <div className="p-12 text-center">Verificando permisos...</div>;
     }
 
+    const getCurrentUser = async () => {
+        const { data: { user } } = await supabase.auth.getUser();
+        setCurrentUser(user);
+
+        if (user) {
+            const { data: profile } = await supabase
+                .from('profiles')
+                .select('role')
+                .eq('id', user.id)
+                .single();
+
+            setUserRole(profile?.role || 'usuario');
+        }
+    };
+
+    const filteredHotels = hotels
+        .filter((hotel) => {
+            const matchesSearch =
+                hotel.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                hotel.city?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                hotel.country?.toLowerCase().includes(searchTerm.toLowerCase());
+
+            const matchesCountry = filterCountry
+                ? hotel.country?.toLowerCase() === filterCountry.toLowerCase()
+                : true;
+
+            const matchesCity = filterCity
+                ? hotel.city?.toLowerCase() === filterCity.toLowerCase()
+                : true;
+
+            // const matchesRegion = filterRegion   
+            //   ? hotel.region?.toLowerCase() === filterRegion.toLowerCase()
+            //   : true;
+
+            return matchesSearch && matchesCountry && matchesCity; // && matchesRegion
+        })
+        .sort((a, b) => {
+            if (sortOrder === 'az') {
+                return (a.name || '').localeCompare(b.name || '', 'es');
+            }
+            return (b.name || '').localeCompare(a.name || '', 'es');
+        });
+
     const fetchHotels = async () => {
-        const { data, error } = await supabase
+        let query = supabase
             .from('hotels')
             .select(`
       *,
-      rooms (*)
+      rooms (*),
+      creator:profiles!hotels_created_by_fkey (full_name, role)
     `)
             .order('created_at', { ascending: false });
 
-        if (error) console.error(error);
-        setHotels(data || []);
+        // Si no es admin, solo ve los hoteles que él creó
+        if (userRole !== 'admin' && currentUser) {
+            query = query.eq('created_by', currentUser.id);
+        }
+
+        const { data, error } = await query;
+
+        if (error) {
+            console.error(error);
+            setHotels([]);
+        } else {
+            setHotels(data || []);
+        }
     };
 
     const uploadImage = async (hotelId: string) => {
@@ -555,11 +610,52 @@ function AdminPage() {
                 </Card>
 
                 {/* Lista de Hoteles con Habitaciones */}
+
                 <Card className="mt-10">
                     <CardHeader>
                         <CardTitle>Hoteles y Habitaciones ({hotels.length})</CardTitle>
                     </CardHeader>
                     <CardContent>
+                        {/* Filtros */}
+                        <div className="bg-white border rounded-2xl p-5 mb-8 space-y-4">
+                            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                                <Input
+                                    placeholder="Buscar por nombre, ciudad o país..."
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                />
+
+                                <select
+                                    className="border rounded-xl px-3 py-2"
+                                    value={sortOrder}
+                                    onChange={(e) => setSortOrder(e.target.value as 'az' | 'za')}
+                                >
+                                    <option value="az">Nombre A → Z</option>
+                                    <option value="za">Nombre Z → A</option>
+                                </select>
+
+                                <Input
+                                    placeholder="Filtrar por país"
+                                    value={filterCountry}
+                                    onChange={(e) => setFilterCountry(e.target.value)}
+                                />
+
+                                <Input
+                                    placeholder="Filtrar por ciudad"
+                                    value={filterCity}
+                                    onChange={(e) => setFilterCity(e.target.value)}
+                                />
+                            </div>
+
+                            {/* Descomenta si agregas la columna region
+                            <Input
+                                placeholder="Filtrar por región"
+                                value={filterRegion}
+                                onChange={(e) => setFilterRegion(e.target.value)}
+                            />
+                            */}
+                        </div>
+                        {/* Lista de Hoteles y sus Habitaciones */}
                         <div className="space-y-8">
                             {hotels.map((hotel: any) => (
                                 <div key={hotel.id} className="border rounded-3xl p-6 bg-white">
@@ -571,8 +667,23 @@ function AdminPage() {
                                             )}
                                             <div>
                                                 <h3 className="text-2xl font-semibold">{hotel.name}</h3>
-                                                <p className="text-gray-600">{hotel.city} • {hotel.stars} ★</p>
-                                                <p className="text-green-600 font-bold">{formatPrice(hotel.price_per_night_base)}</p>
+                                                <p className="text-gray-600">
+                                                    {hotel.city} • {hotel.country} • {hotel.stars} ★
+                                                </p>
+                                                <p className="text-sm text-gray-500 mt-1">
+                                                    Creado por:{' '}
+                                                    <span className="font-medium">
+                                                        {hotel.creator?.full_name || 'Usuario eliminado / sin nombre'}
+                                                    </span>
+                                                    {hotel.creator?.role && (
+                                                        <span className="ml-2 text-xs bg-gray-100 px-2 py-0.5 rounded-full capitalize">
+                                                            {hotel.creator.role}
+                                                        </span>
+                                                    )}
+                                                </p>
+                                                <p className="text-green-600 font-medium">
+                                                    {formatPrice(hotel.price_per_night_base)}
+                                                </p>
                                             </div>
                                         </div>
 
