@@ -2,14 +2,17 @@
 
 import { createClient } from '@/lib/supabase/client';
 import { useEffect, useState } from 'react';
+import { useRequireAuth } from '@/lib/hooks/useRequireAuth';
 
 export default function MisReservas() {
   const [bookings, setBookings] = useState<any[]>([]);
+  const { user, loading: authLoading } = useRequireAuth();
   const [loading, setLoading] = useState(true);
 
   const supabase = createClient();
 
   useEffect(() => {
+    if (!user) return;
     fetchBookings();
   }, []);
 
