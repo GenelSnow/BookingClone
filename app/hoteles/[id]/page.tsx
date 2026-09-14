@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Star, MapPin, Calendar, Users, Hotel } from "lucide-react";
+import { formatPrice } from '@/lib/utils';
 
 export default function HotelDetail() {
   const { id } = useParams();
@@ -134,7 +135,7 @@ export default function HotelDetail() {
                         <p className="text-gray-600 mt-1">{room.capacity} huéspedes • {room.bed_type}</p>
                       </div>
                       <div className="text-right">
-                        <p className="text-3xl font-bold">${room.price_per_night}</p>
+                        <p className="text-3xl font-bold">{formatPrice(room.price_per_night)}</p>
                         <p className="text-sm text-gray-500">por noche</p>
                       </div>
                     </div>
@@ -156,7 +157,7 @@ export default function HotelDetail() {
           <Card className="sticky top-8">
             <CardContent className="p-8">
               <p className="text-4xl font-bold text-green-600">
-                ${Number(hotel.price_per_night_base).toLocaleString('es-CO')}
+                {formatPrice(hotel.price_per_night_base)}
               </p>
               <p className="text-gray-500">Precio por noche aproximado</p>
 

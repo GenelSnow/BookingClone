@@ -10,6 +10,7 @@ import { format, addDays, differenceInDays } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { DayPicker } from 'react-day-picker';
 import 'react-day-picker/dist/style.css';
+import { formatPrice } from '@/lib/utils';
 
 export default function ReservaPage() {
   const { id } = useParams();
@@ -151,7 +152,7 @@ export default function ReservaPage() {
                           <p className="font-semibold">{room.name}</p>
                           <p className="text-sm text-gray-600">{room.capacity} huéspedes • {room.bed_type}</p>
                         </div>
-                        <p className="font-bold">${room.price_per_night}<span className="text-sm font-normal">/noche</span></p>
+                        <p className="font-bold">{formatPrice(room.price_per_night)}<span className="text-sm font-normal">/noche</span></p>
                       </div>
                     </div>
                   ))}
@@ -163,12 +164,12 @@ export default function ReservaPage() {
                 {nights > 0 && (
                   <>
                     <div className="flex justify-between">
-                      <span>{nights} noches × ${selectedRoom?.price_per_night}</span>
-                      <span>${totalPrice}</span>
+                      <span>{nights} noches × {formatPrice(selectedRoom?.price_per_night)}</span>
+                      <span>{formatPrice(totalPrice)}</span>
                     </div>
                     <div className="flex justify-between text-xl font-bold border-t pt-4">
                       <span>Total</span>
-                      <span className="text-green-600">${totalPrice.toLocaleString('es-CO')}</span>
+                      <span className="text-green-600">{formatPrice(totalPrice)}</span>
                     </div>
                   </>
                 )}
@@ -179,7 +180,7 @@ export default function ReservaPage() {
                 className="w-full py-7 text-lg font-semibold"
                 disabled={submitting || nights <= 0 || !selectedRoom}
               >
-                {submitting ? "Procesando..." : `Confirmar Reserva - $${totalPrice.toLocaleString('es-CO')}`}
+                {submitting ? "Procesando..." : `Confirmar Reserva - ${formatPrice(totalPrice)}`}
               </Button>
             </CardContent>
           </Card>

@@ -11,6 +11,8 @@ import { Plus, Trash2, Upload, Edit, User } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useRequireAuth } from '@/lib/hooks/useRequireAuth';
 import { Pencil } from "lucide-react";
+import { formatPrice } from '@/lib/utils';
+
 
 
 function AdminPage() {
@@ -563,7 +565,7 @@ function AdminPage() {
                                             <div>
                                                 <h3 className="text-2xl font-semibold">{hotel.name}</h3>
                                                 <p className="text-gray-600">{hotel.city} • {hotel.stars} ★</p>
-                                                <p className="text-green-600 font-bold">${Number(hotel.price_per_night_base).toLocaleString('es-CO')}</p>
+                                                <p className="text-green-600 font-bold">{formatPrice(hotel.price_per_night_base)}</p>
                                             </div>
                                         </div>
 
@@ -599,7 +601,7 @@ function AdminPage() {
                                                         <div>
                                                             <p className="font-medium">{room.name}</p>
                                                             <p className="text-sm text-gray-600">{room.type} • {room.capacity} personas</p>
-                                                            <p className="text-green-600 font-medium">${room.price_per_night} /noche</p>
+                                                            <p className="text-green-600 font-medium">{formatPrice(room.price_per_night)} /noche</p>
                                                         </div>
                                                         <Button
                                                             variant="outline"
