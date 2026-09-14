@@ -30,6 +30,13 @@ function AdminPage() {
         price_per_night_base: 0,
     });
 
+    const [searchTerm, setSearchTerm] = useState('');
+    const [sortOrder, setSortOrder] = useState<'az' | 'za'>('az');
+    const [filterCountry, setFilterCountry] = useState('');
+    const [filterCity, setFilterCity] = useState('');
+    // const [filterRegion, setFilterRegion] = useState(''); // descomenta si agregas la columna
+    const [userRole, setUserRole] = useState<string>('usuario');
+
     const [newRoom, setNewRoom] = useState({
         name: '',
         type: 'Estándar',
