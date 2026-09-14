@@ -5,39 +5,36 @@ import { useEffect, useState } from 'react';
 import { useRequireAuth } from '@/lib/hooks/useRequireAuth';
 
 export default function MisReservas() {
+const { user, loading: authLoading } = useRequireAuth();
   const [bookings, setBookings] = useState<any[]>([]);
-  const { user, loading: authLoading } = useRequireAuth();
   const [loading, setLoading] = useState(true);
-
   const supabase = createClient();
 
-  useEffect(() => {
+
+useEffect(() => {
     if (!user) return;
-    fetchBookings();
-  }, []);
 
-  const fetchBookings = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
+    const fetchBookings = async () => {
+      const { data } = await supabase
+        .from('bookings')
+        .select(`
+          *,
+          hotels(name, city),
+          rooms(type)
+        `)
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      setBookings(data || []);
       setLoading(false);
-      return;
-    }
+    };
 
-    const { data } = await supabase
-      .from('bookings')
-      .select(`
-        *,
-        hotels(name, city),
-        rooms(type)
-      `)
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false });
+    fetchBookings();
+  }, [user]);
 
-    setBookings(data || []);
-    setLoading(false);
-  };
-
-  if (loading) return <div className="p-12 text-center">Cargando reservas...</div>;
+  if (authLoading || loading) {
+    return <div className="p-12 text-center">Cargando reservas...</div>;
+  }
 
   return (
     <div className="max-w-6xl mx-auto p-6">

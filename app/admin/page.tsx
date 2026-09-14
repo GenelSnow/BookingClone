@@ -9,10 +9,14 @@ import { Label } from "@/components/ui/label";
 import { useRouter } from 'next/navigation';
 import { Plus, Trash2, Upload, Edit, User } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { useRequireAuth } from '@/lib/hooks/useRequireAuth';
 import { Pencil } from "lucide-react";
 
 
 function AdminPage() {
+    const { user, role, loading: authLoading } = useRequireAuth({
+        allowedRoles: ['admin', 'hotelero'],
+    });
     const [hotels, setHotels] = useState<any[]>([]);
     const [currentUser, setCurrentUser] = useState<any>(null);
 
@@ -46,14 +50,13 @@ function AdminPage() {
     const router = useRouter();
 
     useEffect(() => {
-        getCurrentUser();
+        if (!user) return;
         fetchHotels();
-    }, []);
+    }, [user]);
 
-    const getCurrentUser = async () => {
-        const { data: { user } } = await supabase.auth.getUser();
-        setCurrentUser(user);
-    };
+    if (authLoading) {
+        return <div className="p-12 text-center">Verificando permisos...</div>;
+    }
 
     const fetchHotels = async () => {
         const { data, error } = await supabase
