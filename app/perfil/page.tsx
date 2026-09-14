@@ -4,19 +4,24 @@ import { createClient } from '@/lib/supabase/client';
 import { useEffect, useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { useRequireAuth } from '@/lib/hooks/useRequireAuth';
 
 export default function Perfil() {
-  const [user, setUser] = useState<any>(null);
+  const [userData, setUserData] = useState<any>(null);
   const [bookings, setBookings] = useState<any[]>([]);
   const supabase = createClient();
+  const { user, loading: authLoading } = useRequireAuth();
 
   useEffect(() => {
+    if (authLoading || !user) return;
     loadUserData();
-  }, []);
+  }, [user, authLoading]);
+
+
 
   const loadUserData = async () => {
     const { data: { user } } = await supabase.auth.getUser();
-    setUser(user);
+    setUserData(user);
 
     if (user) {
       const { data } = await supabase
@@ -37,6 +42,11 @@ export default function Perfil() {
     window.location.href = '/';
   };
 
+  if (authLoading) {
+    return <div className="p-12 text-center">Verificando permisos...</div>;
+  }
+  
+
   return (
     <div className="max-w-4xl mx-auto p-6">
       <h1 className="text-4xl font-bold mb-8">Mi Perfil</h1>
@@ -46,7 +56,7 @@ export default function Perfil() {
         <Card className="md:col-span-1">
           <CardContent className="p-6">
             <h2 className="font-semibold mb-4">Datos personales</h2>
-            <p><strong>Correo:</strong> {user?.email}</p>
+            <p><strong>Correo:</strong> {userData?.email}</p>
             <Button onClick={handleLogout} variant="destructive" className="w-full mt-6">
               Cerrar Sesión
             </Button>
