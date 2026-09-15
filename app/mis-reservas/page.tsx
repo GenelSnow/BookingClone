@@ -60,14 +60,12 @@ export default function MisReservas() {
     return checkInDate > today;
   };
 
-  const handleCancel = async (bookingId: string) => {
+  const handleCancelBooking = async (bookingId: string) => {
     const confirmed = window.confirm(
-      '¿Estás seguro de que quieres cancelar esta reserva?\nEsta acción no se puede deshacer.'
+      '¿Cancelar esta reserva?\nEl huésped verá el estado como Cancelada.'
     );
 
     if (!confirmed) return;
-
-    setCancellingId(bookingId);
 
     const { error } = await supabase
       .from('bookings')
@@ -77,17 +75,16 @@ export default function MisReservas() {
     if (error) {
       console.error(error);
       toast.error('No se pudo cancelar la reserva: ' + error.message);
-    } else {
-      toast.success('Reserva cancelada correctamente');
-      // Actualizamos la lista local sin volver a pedir todo
-      setBookings((prev) =>
-        prev.map((b) =>
-          b.id === bookingId ? { ...b, status: 'cancelled' } : b
-        )
-      );
+      return;
     }
 
-    setCancellingId(null);
+    toast.success('Reserva cancelada correctamente');
+
+    setBookings((prev) =>
+      prev.map((b) =>
+        b.id === bookingId ? { ...b, status: 'cancelled' } : b
+      )
+    );
   };
 
   const getStatusBadge = (status: string) => {
@@ -105,9 +102,8 @@ export default function MisReservas() {
 
     return (
       <span
-        className={`text-xs font-medium px-3 py-1 rounded-full capitalize ${
-          styles[status] || 'bg-gray-100 text-gray-600'
-        }`}
+        className={`text-xs font-medium px-3 py-1 rounded-full capitalize ${styles[status] || 'bg-gray-100 text-gray-600'
+          }`}
       >
         {labels[status] || status}
       </span>
@@ -182,7 +178,7 @@ export default function MisReservas() {
                       variant="outline"
                       size="sm"
                       className="text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700"
-                      onClick={() => handleCancel(booking.id)}
+                      onClick={() => handleCancelBooking(booking.id)}
                       disabled={cancellingId === booking.id}
                     >
                       <XCircle size={16} className="mr-2" />

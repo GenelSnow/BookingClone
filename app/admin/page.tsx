@@ -236,6 +236,20 @@ function AdminPage() {
         );
     };
 
+    const canCancelBooking = (booking: any) => {
+        // Solo reservas confirmadas
+        if (booking.status !== 'confirmed') return false;
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const checkInDate = new Date(booking.check_in);
+        checkInDate.setHours(0, 0, 0, 0);
+
+        // Se puede cancelar solo si el check-in aún no ha llegado
+        return checkInDate > today;
+    };
+
     const canComplete = (booking: any) => {
         if (booking.status !== 'confirmed') return false;
 
@@ -1020,17 +1034,31 @@ function AdminPage() {
                                                 Reservado el{' '}
                                                 {new Date(booking.created_at).toLocaleDateString('es-ES')}
                                             </p>
-                                            {/* Botón completar */}
-                                            {canComplete(booking) && (
-                                                <Button
-                                                    size="sm"
-                                                    variant="outline"
-                                                    className="mt-1 text-blue-600 border-blue-200 hover:bg-blue-50"
-                                                    onClick={() => handleCompleteBooking(booking.id)}
-                                                >
-                                                    Marcar como completada
-                                                </Button>
-                                            )}
+                                            <div className="flex flex-col gap-2 mt-1">
+                                                {/* Completar */}
+                                                {canComplete(booking) && (
+                                                    <Button
+                                                        size="sm"
+                                                        variant="outline"
+                                                        className="text-blue-600 border-blue-200 hover:bg-blue-50"
+                                                        onClick={() => handleCompleteBooking(booking.id)}
+                                                    >
+                                                        Marcar como completada
+                                                    </Button>
+                                                )}
+
+                                                {/* Cancelar */}
+                                                {canCancelBooking(booking) && (
+                                                    <Button
+                                                        size="sm"
+                                                        variant="outline"
+                                                        className="text-red-600 border-red-200 hover:bg-red-50"
+                                                        onClick={() => handleCancelBooking(booking.id)}
+                                                    >
+                                                        Cancelar reserva
+                                                    </Button>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
