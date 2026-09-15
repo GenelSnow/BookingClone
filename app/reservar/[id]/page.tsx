@@ -6,11 +6,12 @@ import { useParams, useRouter } from 'next/navigation';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar as CalendarIcon } from "lucide-react";
-import { format, addDays, differenceInDays } from 'date-fns';
+import { addDays, differenceInDays, eachDayOfInterval, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { DayPicker } from 'react-day-picker';
+import { DayPicker, DateRange } from 'react-day-picker';
 import 'react-day-picker/dist/style.css';
 import { formatPrice } from '@/lib/utils';
+import { toast } from 'sonner';
 
 export default function ReservaPage() {
   const { id } = useParams();
@@ -20,15 +21,25 @@ export default function ReservaPage() {
   const [hotel, setHotel] = useState<any>(null);
   const [rooms, setRooms] = useState<any[]>([]);
   const [selectedRoom, setSelectedRoom] = useState<any>(null);
-  const [checkIn, setCheckIn] = useState<Date>(new Date());
-  const [checkOut, setCheckOut] = useState<Date>(addDays(new Date(), 3));
+  const [checkIn, setCheckIn] = useState<Date | undefined>(new Date());
+  const [checkOut, setCheckOut] = useState<Date | undefined>(addDays(new Date(), 3));
   const [guests, setGuests] = useState(2);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [occupiedDates, setOccupiedDates] = useState<Date[]>([]); // días bloqueados
 
   useEffect(() => {
     fetchData();
   }, [id]);
+
+  // Cada vez que cambia la habitación, cargamos sus fechas ocupadas
+  useEffect(() => {
+    if (selectedRoom?.id) {
+      fetchOccupiedDates(selectedRoom.id);
+    } else {
+      setOccupiedDates([]);
+    }
+  }, [selectedRoom?.id]);
 
   const fetchData = async () => {
     const { data: hotelData } = await supabase
@@ -54,50 +65,131 @@ export default function ReservaPage() {
     setLoading(false);
   };
 
-  const nights = checkIn && checkOut ? differenceInDays(checkOut, checkIn) : 0;
-  const totalPrice = selectedRoom && nights > 0
-    ? selectedRoom.price_per_night * nights
-    : 0;
+  // Trae todas las reservas confirmadas de la habitación y genera los días ocupados
+  const fetchOccupiedDates = async (roomId: string) => {
+    const { data, error } = await supabase
+      .from('bookings')
+      .select('check_in, check_out')
+      .eq('room_id', roomId)
+      .eq('status', 'confirmed');
+
+    if (error) {
+      console.error('Error cargando fechas ocupadas:', error);
+      setOccupiedDates([]);
+      return;
+    }
+
+    const dates: Date[] = [];
+
+    (data || []).forEach((booking) => {
+      const start = parseISO(booking.check_in);
+      // El día de check-out normalmente queda libre, por eso restamos 1 día
+      const end = addDays(parseISO(booking.check_out), -1);
+
+      if (end >= start) {
+        const days = eachDayOfInterval({ start, end });
+        dates.push(...days);
+      }
+    });
+
+    setOccupiedDates(dates);
+  };
+
+  const nights =
+    checkIn && checkOut ? differenceInDays(checkOut, checkIn) : 0;
+
+  const totalPrice =
+    selectedRoom && nights > 0
+      ? selectedRoom.price_per_night * nights
+      : 0;
+
+  // Validación de solapamiento (por si acaso)
+  const checkOverlap = async (roomId: string, start: Date, end: Date) => {
+    const checkInStr = start.toISOString().split('T')[0];
+    const checkOutStr = end.toISOString().split('T')[0];
+
+    const { data, error } = await supabase
+      .from('bookings')
+      .select('id')
+      .eq('room_id', roomId)
+      .eq('status', 'confirmed')
+      .lt('check_in', checkOutStr)
+      .gt('check_out', checkInStr);
+
+    if (error) {
+      console.error(error);
+      return true;
+    }
+
+    return (data?.length || 0) > 0;
+  };
 
   const handleReserve = async () => {
     if (!checkIn || !checkOut || !selectedRoom || nights <= 0) {
-      alert("Por favor selecciona fechas válidas y una habitación");
+      toast.error('Por favor selecciona fechas válidas y una habitación');
+      return;
+    }
+
+    if (checkOut <= checkIn) {
+      toast.error('La fecha de salida debe ser posterior a la de entrada');
       return;
     }
 
     setSubmitting(true);
 
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      alert("Debes iniciar sesión para reservar");
-      router.push('/login');
-      return;
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast.error('Debes iniciar sesión para reservar');
+        router.push('/login');
+        return;
+      }
+
+      const hasOverlap = await checkOverlap(selectedRoom.id, checkIn, checkOut);
+      if (hasOverlap) {
+        toast.error('Esta habitación ya está reservada en esas fechas.');
+        setSubmitting(false);
+        return;
+      }
+
+      const { error } = await supabase.from('bookings').insert({
+        user_id: user.id,
+        hotel_id: id,
+        room_id: selectedRoom.id,
+        check_in: checkIn.toISOString().split('T')[0],
+        check_out: checkOut.toISOString().split('T')[0],
+        total_price: totalPrice,
+        guests,
+        status: 'confirmed',
+      });
+
+      if (error) {
+        toast.error('Error al crear la reserva: ' + error.message);
+      } else {
+        toast.success('¡Reserva confirmada exitosamente!');
+        router.push('/mis-reservas');
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error('Ocurrió un error inesperado');
+    } finally {
+      setSubmitting(false);
     }
-
-    const { error } = await supabase.from('bookings').insert({
-      user_id: user.id,
-      hotel_id: id,
-      room_id: selectedRoom.id,
-      check_in: checkIn.toISOString().split('T')[0],
-      check_out: checkOut.toISOString().split('T')[0],
-      total_price: totalPrice,
-      guests,
-      status: 'confirmed'
-    });
-
-    if (error) {
-      console.error(error);
-      alert("Error al crear la reserva: " + error.message);
-    } else {
-      alert("¡Reserva confirmada exitosamente! 🎉");
-      router.push('/mis-reservas');
-    }
-
-    setSubmitting(false);
   };
 
-  if (loading) return <div className="p-12 text-center text-xl">Cargando...</div>;
-  if (!hotel) return <div className="p-12 text-center">Hotel no encontrado</div>;
+  // Días deshabilitados: fechas pasadas + días ocupados
+  const disabledDays = [
+    { before: new Date() },
+    ...occupiedDates,
+  ];
+
+  if (loading) {
+    return <div className="p-12 text-center text-xl">Cargando...</div>;
+  }
+
+  if (!hotel) {
+    return <div className="p-12 text-center">Hotel no encontrado</div>;
+  }
 
   return (
     <div className="max-w-6xl mx-auto px-6 py-10">
@@ -111,16 +203,21 @@ export default function ReservaPage() {
               <CardTitle className="flex items-center gap-2">
                 <CalendarIcon /> Selecciona tus fechas
               </CardTitle>
+              {occupiedDates.length > 0 && (
+                <p className="text-sm text-gray-500 mt-1">
+                  Los días en gris ya están reservados para esta habitación
+                </p>
+              )}
             </CardHeader>
             <CardContent>
               <DayPicker
                 mode="range"
                 selected={{ from: checkIn, to: checkOut }}
-                onSelect={(range) => {
-                  if (range?.from) setCheckIn(range.from);
-                  if (range?.to) setCheckOut(range.to);
+                onSelect={(range: DateRange | undefined) => {
+                  setCheckIn(range?.from);
+                  setCheckOut(range?.to);
                 }}
-                disabled={{ before: new Date() }}   // ← Bloquea fechas pasadas
+                disabled={disabledDays}
                 numberOfMonths={2}
                 locale={es}
                 className="mx-auto"
@@ -143,16 +240,29 @@ export default function ReservaPage() {
                   {rooms.map((room) => (
                     <div
                       key={room.id}
-                      className={`p-4 border rounded-xl cursor-pointer transition-all ${selectedRoom?.id === room.id ? 'border-blue-600 bg-blue-50' : 'hover:border-gray-300'
-                        }`}
-                      onClick={() => setSelectedRoom(room)}
+                      className={`p-4 border rounded-xl cursor-pointer transition-all ${
+                        selectedRoom?.id === room.id
+                          ? 'border-blue-600 bg-blue-50'
+                          : 'hover:border-gray-300'
+                      }`}
+                      onClick={() => {
+                        setSelectedRoom(room);
+                        // Limpiamos fechas al cambiar de habitación para evitar inconsistencias
+                        setCheckIn(new Date());
+                        setCheckOut(addDays(new Date(), 3));
+                      }}
                     >
                       <div className="flex justify-between items-start">
                         <div>
                           <p className="font-semibold">{room.name}</p>
-                          <p className="text-sm text-gray-600">{room.capacity} huéspedes • {room.bed_type}</p>
+                          <p className="text-sm text-gray-600">
+                            {room.capacity} huéspedes • {room.bed_type}
+                          </p>
                         </div>
-                        <p className="font-bold">{formatPrice(room.price_per_night)}<span className="text-sm font-normal">/noche</span></p>
+                        <p className="font-bold">
+                          {formatPrice(room.price_per_night)}
+                          <span className="text-sm font-normal">/noche</span>
+                        </p>
                       </div>
                     </div>
                   ))}
@@ -164,7 +274,9 @@ export default function ReservaPage() {
                 {nights > 0 && (
                   <>
                     <div className="flex justify-between">
-                      <span>{nights} noches × {formatPrice(selectedRoom?.price_per_night)}</span>
+                      <span>
+                        {nights} noches × {formatPrice(selectedRoom?.price_per_night)}
+                      </span>
                       <span>{formatPrice(totalPrice)}</span>
                     </div>
                     <div className="flex justify-between text-xl font-bold border-t pt-4">
@@ -180,7 +292,9 @@ export default function ReservaPage() {
                 className="w-full py-7 text-lg font-semibold"
                 disabled={submitting || nights <= 0 || !selectedRoom}
               >
-                {submitting ? "Procesando..." : `Confirmar Reserva - ${formatPrice(totalPrice)}`}
+                {submitting
+                  ? 'Verificando disponibilidad...'
+                  : `Confirmar Reserva - ${formatPrice(totalPrice)}`}
               </Button>
             </CardContent>
           </Card>
