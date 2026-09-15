@@ -208,7 +208,46 @@ function AdminPage() {
             setBookingsLoading(false);
         }
     };
-    
+    const handleCompleteBooking = async (bookingId: string) => {
+        const confirmed = window.confirm(
+            '¿Marcar esta reserva como completada?\nEsto indica que el huésped ya hizo el check-out.'
+        );
+
+        if (!confirmed) return;
+
+        const { error } = await supabase
+            .from('bookings')
+            .update({ status: 'completed' })
+            .eq('id', bookingId);
+
+        if (error) {
+            console.error(error);
+            toast.error('No se pudo actualizar la reserva: ' + error.message);
+            return;
+        }
+
+        toast.success('Reserva marcada como completada');
+
+        // Actualización local (sin recargar todo)
+        setBookings((prev) =>
+            prev.map((b) =>
+                b.id === bookingId ? { ...b, status: 'completed' } : b
+            )
+        );
+    };
+
+    const canComplete = (booking: any) => {
+        if (booking.status !== 'confirmed') return false;
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const checkOutDate = new Date(booking.check_out);
+        checkOutDate.setHours(0, 0, 0, 0);
+
+        // Se puede completar a partir del día de check-out
+        return checkOutDate <= today;
+    };
 
     if (authLoading) {
         return <div className="p-12 text-center">Verificando permisos...</div>;
@@ -930,10 +969,10 @@ function AdminPage() {
                                                 </h3>
                                                 <span
                                                     className={`text-xs font-medium px-2.5 py-1 rounded-full ${booking.status === 'confirmed'
-                                                            ? 'bg-green-100 text-green-700'
-                                                            : booking.status === 'cancelled'
-                                                                ? 'bg-red-100 text-red-700'
-                                                                : 'bg-gray-100 text-gray-600'
+                                                        ? 'bg-green-100 text-green-700'
+                                                        : booking.status === 'cancelled'
+                                                            ? 'bg-red-100 text-red-700'
+                                                            : 'bg-gray-100 text-gray-600'
                                                         }`}
                                                 >
                                                     {booking.status === 'confirmed'
@@ -981,6 +1020,17 @@ function AdminPage() {
                                                 Reservado el{' '}
                                                 {new Date(booking.created_at).toLocaleDateString('es-ES')}
                                             </p>
+                                            {/* Botón completar */}
+                                            {canComplete(booking) && (
+                                                <Button
+                                                    size="sm"
+                                                    variant="outline"
+                                                    className="mt-1 text-blue-600 border-blue-200 hover:bg-blue-50"
+                                                    onClick={() => handleCompleteBooking(booking.id)}
+                                                >
+                                                    Marcar como completada
+                                                </Button>
+                                            )}
                                         </div>
                                     </div>
                                 </div>
