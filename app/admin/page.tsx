@@ -22,6 +22,7 @@ function AdminPage() {
     const [hotels, setHotels] = useState<any[]>([]);
     const [currentUser, setCurrentUser] = useState<any>(null);
 
+
     const [newHotel, setNewHotel] = useState({
         name: '',
         city: '',
@@ -55,6 +56,7 @@ function AdminPage() {
     const [userRole, setUserRole] = useState<string>('usuario');
 
 
+
     const supabase = createClient();
     const router = useRouter();
 
@@ -62,6 +64,32 @@ function AdminPage() {
         if (!user) return;
         fetchHotels();
     }, [user]);
+
+    const fetchHotels = async () => {
+        if (!user) return;
+
+        let query = supabase
+            .from('hotels')
+            .select(`
+      *,
+      rooms (*)
+    `)
+            .order('created_at', { ascending: false });
+
+        // Solo admin ve todos. Hotelero solo ve los suyos
+        if (role !== 'admin') {
+            query = query.eq('created_by', user.id);
+        }
+
+        const { data, error } = await query;
+
+        if (error) {
+            console.error('Error al cargar hoteles:', error.message, error);
+            setHotels([]);
+        } else {
+            setHotels(data || []);
+        }
+    };
 
     if (authLoading) {
         return <div className="p-12 text-center">Verificando permisos...</div>;
@@ -110,30 +138,7 @@ function AdminPage() {
             return (b.name || '').localeCompare(a.name || '', 'es');
         });
 
-    const fetchHotels = async () => {
-        let query = supabase
-            .from('hotels')
-            .select(`
-      *,
-      rooms (*),
-      creator:profiles!hotels_created_by_fkey (full_name, role)
-    `)
-            .order('created_at', { ascending: false });
 
-        // Si no es admin, solo ve los hoteles que él creó
-        if (userRole !== 'admin' && currentUser) {
-            query = query.eq('created_by', currentUser.id);
-        }
-
-        const { data, error } = await query;
-
-        if (error) {
-            console.error(error);
-            setHotels([]);
-        } else {
-            setHotels(data || []);
-        }
-    };
 
     const uploadImage = async (hotelId: string) => {
         if (!imageFile) return [];
@@ -167,7 +172,8 @@ function AdminPage() {
 
     // Función para agregar hotel (actualizada)
     const addHotelWithRooms = async () => {
-        if (!newHotel.name || !newHotel.city || roomsToAdd.length === 0 || !currentUser) {
+        if (!newHotel.name || !newHotel.city || roomsToAdd.length === 0 || !user) {
+            created_by: user.id
             alert("Faltan datos o debes estar logueado");
             return;
         }
@@ -318,6 +324,45 @@ function AdminPage() {
     return (
         <div className="max-w-6xl mx-auto p-6">
             <h1 className="text-4xl font-bold mb-10">Panel de Administrador</h1>
+            {/* Filtros */}
+            <div className="bg-white border rounded-2xl p-5 mb-8 space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <Input
+                        placeholder="Buscar por nombre, ciudad o país..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+
+                    <select
+                        className="border rounded-xl px-3 py-2"
+                        value={sortOrder}
+                        onChange={(e) => setSortOrder(e.target.value as 'az' | 'za')}
+                    >
+                        <option value="az">Nombre A → Z</option>
+                        <option value="za">Nombre Z → A</option>
+                    </select>
+
+                    <Input
+                        placeholder="Filtrar por país"
+                        value={filterCountry}
+                        onChange={(e) => setFilterCountry(e.target.value)}
+                    />
+
+                    <Input
+                        placeholder="Filtrar por ciudad"
+                        value={filterCity}
+                        onChange={(e) => setFilterCity(e.target.value)}
+                    />
+                </div>
+
+                {/* Descomenta si agregas la columna region
+                            <Input
+                                placeholder="Filtrar por región"
+                                value={filterRegion}
+                                onChange={(e) => setFilterRegion(e.target.value)}
+                            />
+                            */}
+            </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
                 {/* Formulario Crear Hotel + Habitaciones */}
@@ -616,46 +661,6 @@ function AdminPage() {
                         <CardTitle>Hoteles y Habitaciones ({hotels.length})</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        {/* Filtros */}
-                        <div className="bg-white border rounded-2xl p-5 mb-8 space-y-4">
-                            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                                <Input
-                                    placeholder="Buscar por nombre, ciudad o país..."
-                                    value={searchTerm}
-                                    onChange={(e) => setSearchTerm(e.target.value)}
-                                />
-
-                                <select
-                                    className="border rounded-xl px-3 py-2"
-                                    value={sortOrder}
-                                    onChange={(e) => setSortOrder(e.target.value as 'az' | 'za')}
-                                >
-                                    <option value="az">Nombre A → Z</option>
-                                    <option value="za">Nombre Z → A</option>
-                                </select>
-
-                                <Input
-                                    placeholder="Filtrar por país"
-                                    value={filterCountry}
-                                    onChange={(e) => setFilterCountry(e.target.value)}
-                                />
-
-                                <Input
-                                    placeholder="Filtrar por ciudad"
-                                    value={filterCity}
-                                    onChange={(e) => setFilterCity(e.target.value)}
-                                />
-                            </div>
-
-                            {/* Descomenta si agregas la columna region
-                            <Input
-                                placeholder="Filtrar por región"
-                                value={filterRegion}
-                                onChange={(e) => setFilterRegion(e.target.value)}
-                            />
-                            */}
-                        </div>
-                        {/* Lista de Hoteles y sus Habitaciones */}
                         <div className="space-y-8">
                             {hotels.map((hotel: any) => (
                                 <div key={hotel.id} className="border rounded-3xl p-6 bg-white">
