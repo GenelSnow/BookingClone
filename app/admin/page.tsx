@@ -20,7 +20,6 @@ function AdminPage() {
         allowedRoles: ['admin', 'hotelero'],
     });
     const [hotels, setHotels] = useState<any[]>([]);
-    const [currentUser, setCurrentUser] = useState<any>(null);
 
 
     const [newHotel, setNewHotel] = useState({
@@ -185,7 +184,7 @@ function AdminPage() {
             .from('hotels')
             .insert({
                 ...newHotel,
-                created_by: currentUser.id
+                created_by: user.id
             })
             .select()
             .single();
