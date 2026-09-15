@@ -75,7 +75,6 @@ function AdminPage() {
     `)
             .order('created_at', { ascending: false });
 
-        // Solo admin ve todos. Hotelero solo ve los suyos
         if (role !== 'admin') {
             query = query.eq('created_by', user.id);
         }
@@ -83,11 +82,35 @@ function AdminPage() {
         const { data, error } = await query;
 
         if (error) {
-            console.error('Error al cargar hoteles:', error.message, error);
+            console.error(error);
             setHotels([]);
-        } else {
-            setHotels(data || []);
+            return;
         }
+
+        // Traemos los perfiles de los creadores por separado
+        const creatorIds = [...new Set((data || []).map(h => h.created_by).filter(Boolean))];
+
+        let profilesMap: Record<string, any> = {};
+
+        if (creatorIds.length > 0) {
+            const { data: profiles } = await supabase
+                .from('profiles')
+                .select('id, full_name, role')
+                .in('id', creatorIds);
+
+            profilesMap = (profiles || []).reduce((acc, p) => {
+                acc[p.id] = p;
+                return acc;
+            }, {} as Record<string, any>);
+        }
+
+        // Combinamos la info
+        const hotelsWithCreator = (data || []).map(hotel => ({
+            ...hotel,
+            creator: hotel.created_by ? profilesMap[hotel.created_by] || null : null
+        }));
+
+        setHotels(hotelsWithCreator);
     };
 
     if (authLoading) {
@@ -677,7 +700,7 @@ function AdminPage() {
                                                 <p className="text-sm text-gray-500 mt-1">
                                                     Creado por:{' '}
                                                     <span className="font-medium">
-                                                        {hotel.creator?.full_name || 'Usuario eliminado / sin nombre'}
+                                                        {hotel.creator?.full_name || 'Sin información'}
                                                     </span>
                                                     {hotel.creator?.role && (
                                                         <span className="ml-2 text-xs bg-gray-100 px-2 py-0.5 rounded-full capitalize">

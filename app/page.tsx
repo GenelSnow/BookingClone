@@ -86,9 +86,10 @@ export default function Home() {
                   <p className="text-xs text-gray-500">Destino</p>
                   <Input
                     placeholder="¿A dónde vas?"
-                    className="border-0 p-0 text-lg focus-visible:ring-0 placeholder:text-gray-400"
+                    className="border-0 p-0 text-lg focus-visible:ring-0 placeholder:text-gray-400 text-gray-700"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
+                    
                   />
                 </div>
               </div>
