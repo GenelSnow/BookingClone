@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { useRequireAuth } from '@/lib/hooks/useRequireAuth';
 import { Pencil } from "lucide-react";
 import { formatPrice } from '@/lib/utils';
+import { toast } from 'sonner';
 
 
 
@@ -235,6 +236,33 @@ function AdminPage() {
             )
         );
     };
+
+    const handleCancelBooking = async (bookingId: string) => {
+    const confirmed = window.confirm(
+        '¿Cancelar esta reserva?\nEl huésped verá el estado como Cancelada.'
+    );
+
+    if (!confirmed) return;
+
+    const { error } = await supabase
+        .from('bookings')
+        .update({ status: 'cancelled' })
+        .eq('id', bookingId);
+
+    if (error) {
+        console.error(error);
+        toast.error('No se pudo cancelar la reserva: ' + error.message);
+        return;
+    }
+
+    toast.success('Reserva cancelada correctamente');
+
+    setBookings((prev) =>
+        prev.map((b) =>
+            b.id === bookingId ? { ...b, status: 'cancelled' } : b
+        )
+    );
+};
 
     const canCancelBooking = (booking: any) => {
         // Solo reservas confirmadas
