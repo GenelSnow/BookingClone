@@ -27,6 +27,26 @@ export default function MisReservas() {
   const supabase = createClient();
   const router = useRouter();
 
+  const openCancelModal = (bookingId: string) => {
+    setSelectedBookingId(bookingId);
+    setCancelReason('');
+    setCustomReason('');
+    setCancelModalOpen(true);
+  };
+
+  const GUEST_REASONS = [
+    'Cambio de planes',
+    'Encontré una mejor opción',
+    'Motivos personales / de salud',
+    'Problemas con el pago',
+    'El hotel no cumple lo esperado',
+    'Otro',
+  ];
+
+  // Estados (si aún no los tienes separados):
+  const [cancelReason, setCancelReason] = useState('');
+  const [customReason, setCustomReason] = useState('');
+
   useEffect(() => {
     fetchBookings();
   }, []);
@@ -77,6 +97,8 @@ export default function MisReservas() {
 
     setCancellingId(selectedBookingId);
 
+
+
     const { error } = await supabase
       .from('bookings')
       .update({
@@ -85,6 +107,19 @@ export default function MisReservas() {
         cancelled_by: 'huesped',
       })
       .eq('id', selectedBookingId);
+
+    const finalReason =
+      cancelReason === 'Otro' ? customReason.trim() : cancelReason.trim();
+
+    if (!finalReason) {
+      toast.error(
+        cancelReason === 'Otro'
+          ? 'Describe el motivo de cancelación'
+          : 'Selecciona un motivo de cancelación'
+      );
+      return;
+    }
+
 
     if (error) {
       console.error(error);
@@ -95,11 +130,11 @@ export default function MisReservas() {
         prev.map((b) =>
           b.id === selectedBookingId
             ? {
-                ...b,
-                status: 'cancelled',
-                cancellation_reason: cancelReason.trim(),
-                cancelled_by: 'huesped',
-              }
+              ...b,
+              status: 'cancelled',
+              cancellation_reason: cancelReason.trim(),
+              cancelled_by: 'huesped',
+            }
             : b
         )
       );
@@ -128,6 +163,8 @@ export default function MisReservas() {
       </span>
     );
   };
+
+
 
   if (loading) return <div className="p-12 text-center">Cargando reservas...</div>;
 
@@ -177,6 +214,11 @@ export default function MisReservas() {
                       size="sm"
                       className="text-red-600 border-red-200 hover:bg-red-50"
                       onClick={() => openCancelModal(booking.id)}
+                      disabled={
+                        cancellingId !== null ||
+                        !cancelReason ||
+                        (cancelReason === 'Otro' && !customReason.trim())
+                      }
                     >
                       <XCircle size={16} className="mr-2" />
                       Cancelar reserva
@@ -195,19 +237,42 @@ export default function MisReservas() {
           <DialogHeader>
             <DialogTitle>Cancelar reserva</DialogTitle>
           </DialogHeader>
+          {/* Dentro del Dialog */}
           <div className="space-y-4 py-2">
             <p className="text-sm text-gray-600">
-              Indica el motivo de la cancelación. Esta información quedará registrada.
+              Selecciona el motivo de la cancelación.
             </p>
+
             <div className="space-y-2">
               <Label>Motivo</Label>
-              <textarea
-                className="w-full min-h-[100px] border rounded-xl p-3 text-sm"
-                placeholder="Ej: Cambio de planes, encontré otra opción, etc."
+              <select
+                className="w-full border rounded-xl px-3 py-2.5 text-sm bg-white"
                 value={cancelReason}
-                onChange={(e) => setCancelReason(e.target.value)}
-              />
+                onChange={(e) => {
+                  setCancelReason(e.target.value);
+                  if (e.target.value !== 'Otro') setCustomReason('');
+                }}
+              >
+                <option value="">Selecciona un motivo</option>
+                {GUEST_REASONS.map((r) => (
+                  <option key={r} value={r}>
+                    {r}
+                  </option>
+                ))}
+              </select>
             </div>
+
+            {cancelReason === 'Otro' && (
+              <div className="space-y-2">
+                <Label>Describe el motivo</Label>
+                <textarea
+                  className="w-full min-h-[90px] border rounded-xl p-3 text-sm"
+                  placeholder="Escribe el motivo..."
+                  value={customReason}
+                  onChange={(e) => setCustomReason(e.target.value)}
+                />
+              </div>
+            )}
           </div>
           <DialogFooter className="gap-2">
             <Button variant="outline" onClick={() => setCancelModalOpen(false)}>
