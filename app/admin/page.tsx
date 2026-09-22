@@ -15,6 +15,56 @@ import { formatPrice } from '@/lib/utils';
 import { toast } from 'sonner';
 
 
+function PaginationControls({
+    page,
+    totalPages,
+    onChange,
+    totalItems,
+    pageSize,
+}: {
+    page: number;
+    totalPages: number;
+    onChange: (page: number) => void;
+    totalItems: number;
+    pageSize: number;
+}) {
+    if (totalItems === 0) return null;
+
+    const from = (page - 1) * pageSize + 1;
+    const to = Math.min(page * pageSize, totalItems);
+
+    return (
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mt-6 pt-4 border-t">
+            <p className="text-sm text-gray-500">
+                Mostrando {from}–{to} de {totalItems}
+            </p>
+            <div className="flex items-center gap-2">
+                <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={page <= 1}
+                    onClick={() => onChange(page - 1)}
+                >
+                    Anterior
+                </Button>
+                <span className="text-sm font-medium px-2">
+                    {page} / {totalPages}
+                </span>
+                <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={page >= totalPages}
+                    onClick={() => onChange(page + 1)}
+                >
+                    Siguiente
+                </Button>
+            </div>
+        </div>
+    );
+}
+
 
 function AdminPage() {
     const { user, role, loading: authLoading } = useRequireAuth({
@@ -82,14 +132,12 @@ function AdminPage() {
     const router = useRouter();
 
     useEffect(() => {
-        if (!user) return;
+        if (hotelsPage > totalHotelPages) setHotelsPage(totalHotelPages);
+    }, [totalHotelPages, hotelsPage]);
 
-        if (activeTab === 'hoteles') {
-            fetchHotels();
-        } else if (activeTab === 'reservas') {
-            fetchBookings();
-        }
-    }, [user, role, activeTab, statusFilter]);
+    useEffect(() => {
+        if (bookingsPage > totalBookingPages) setBookingsPage(totalBookingPages);
+    }, [totalBookingPages, bookingsPage]);
 
     const fetchHotels = async () => {
         if (!user) return;
@@ -388,6 +436,18 @@ function AdminPage() {
             return nameB.localeCompare(nameA, 'es');
         });
 
+    const totalHotelPages = Math.max(1, Math.ceil(filteredHotels.length / PAGE_SIZE));
+    const paginatedHotels = filteredHotels.slice(
+        (hotelsPage - 1) * PAGE_SIZE,
+        hotelsPage * PAGE_SIZE
+    );
+
+    const totalBookingPages = Math.max(1, Math.ceil(bookings.length / BOOKINGS_PAGE_SIZE));
+    const paginatedBookings = bookings.slice(
+        (bookingsPage - 1) * BOOKINGS_PAGE_SIZE,
+        bookingsPage * BOOKINGS_PAGE_SIZE
+    );
+
     const uploadImage = async (hotelId: string) => {
         if (!imageFile) return [];
 
@@ -567,6 +627,11 @@ function AdminPage() {
             fetchHotels();
         }
     };
+
+    const [hotelsPage, setHotelsPage] = useState(1);
+    const [bookingsPage, setBookingsPage] = useState(1);
+    const PAGE_SIZE = 5;
+    const BOOKINGS_PAGE_SIZE = 8;
 
     return (
         <div className="max-w-6xl mx-auto p-6">
@@ -934,13 +999,13 @@ function AdminPage() {
                         </CardHeader>
                         <CardContent>
                             <div className="space-y-8">
-                                {filteredHotels.length === 0 ? (
+                                {paginatedHotels.length === 0 ? (
                                     <p className="text-center text-gray-500 py-10">
                                         No hay hoteles que coincidan con los filtros.
                                     </p>
                                 ) : (
                                     <div className="space-y-8">
-                                        {filteredHotels.map((hotel: any) => (
+                                        {paginatedHotels.map((hotel: any) => (
                                             <div key={hotel.id} className="border rounded-3xl p-6 bg-white">
                                                 {/* Info del Hotel */}
                                                 <div className="flex justify-between items-start  mb-6">
@@ -1023,6 +1088,13 @@ function AdminPage() {
                                         ))}
                                     </div>
                                 )}
+                                <PaginationControls
+                                    page={hotelsPage}
+                                    totalPages={totalHotelPages}
+                                    onChange={setHotelsPage}
+                                    totalItems={filteredHotels.length}
+                                    pageSize={PAGE_SIZE}
+                                />
                             </div>
                         </CardContent>
                     </Card>
@@ -1056,7 +1128,7 @@ function AdminPage() {
                         </div>
                     ) : (
                         <div className="space-y-4">
-                            {bookings.map((booking) => (
+                            {paginatedBookings.map((booking) => (
                                 <div
                                     key={booking.id}
                                     className="border rounded-2xl p-5 bg-white shadow-sm hover:shadow-md transition-shadow"
@@ -1155,6 +1227,13 @@ function AdminPage() {
                                     </div>
                                 </div>
                             ))}
+                            <PaginationControls
+                                page={bookingsPage}
+                                totalPages={totalBookingPages}
+                                onChange={setBookingsPage}
+                                totalItems={bookings.length}
+                                pageSize={BOOKINGS_PAGE_SIZE}
+                            />
                         </div>
                     )}
                 </div>
