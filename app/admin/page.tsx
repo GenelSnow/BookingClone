@@ -1221,6 +1221,6 @@ function AdminPage() {
             </Dialog>
         </div>
     );
-}
+ }
 
 export default AdminPage;
