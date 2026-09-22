@@ -23,16 +23,8 @@ export default function MisReservas() {
   const [cancellingId, setCancellingId] = useState<string | null>(null);
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
   const [selectedBookingId, setSelectedBookingId] = useState<string | null>(null);
-  const [cancelReason, setCancelReason] = useState('');
   const supabase = createClient();
   const router = useRouter();
-
-  const openCancelModal = (bookingId: string) => {
-    setSelectedBookingId(bookingId);
-    setCancelReason('');
-    setCustomReason('');
-    setCancelModalOpen(true);
-  };
 
   const GUEST_REASONS = [
     'Cambio de planes',
@@ -90,24 +82,8 @@ export default function MisReservas() {
 
   const handleCancel = async () => {
     if (!selectedBookingId) return;
-    if (!cancelReason.trim()) {
-      toast.error('Debes indicar un motivo de cancelación');
-      return;
-    }
 
-    setCancellingId(selectedBookingId);
-
-
-
-    const { error } = await supabase
-      .from('bookings')
-      .update({
-        status: 'cancelled',
-        cancellation_reason: cancelReason.trim(),
-        cancelled_by: 'huesped',
-      })
-      .eq('id', selectedBookingId);
-
+    // Motivo final: si eligió "Otro", usa el texto del textarea
     const finalReason =
       cancelReason === 'Otro' ? customReason.trim() : cancelReason.trim();
 
@@ -120,6 +96,16 @@ export default function MisReservas() {
       return;
     }
 
+    setCancellingId(selectedBookingId);
+
+    const { error } = await supabase
+      .from('bookings')
+      .update({
+        status: 'cancelled',
+        cancellation_reason: finalReason, // ← aquí va el motivo final
+        cancelled_by: 'huesped',          // ← quién canceló
+      })
+      .eq('id', selectedBookingId);
 
     if (error) {
       console.error(error);
@@ -132,7 +118,7 @@ export default function MisReservas() {
             ? {
               ...b,
               status: 'cancelled',
-              cancellation_reason: cancelReason.trim(),
+              cancellation_reason: finalReason,
               cancelled_by: 'huesped',
             }
             : b
@@ -140,6 +126,7 @@ export default function MisReservas() {
       );
       setCancelModalOpen(false);
       setCancelReason('');
+      setCustomReason('');
       setSelectedBookingId(null);
     }
 
@@ -214,11 +201,7 @@ export default function MisReservas() {
                       size="sm"
                       className="text-red-600 border-red-200 hover:bg-red-50"
                       onClick={() => openCancelModal(booking.id)}
-                      disabled={
-                        cancellingId !== null ||
-                        !cancelReason ||
-                        (cancelReason === 'Otro' && !customReason.trim())
-                      }
+
                     >
                       <XCircle size={16} className="mr-2" />
                       Cancelar reserva
@@ -281,7 +264,11 @@ export default function MisReservas() {
             <Button
               variant="destructive"
               onClick={handleCancel}
-              disabled={cancellingId !== null || !cancelReason.trim()}
+              disabled={
+                cancellingId !== null ||
+                !cancelReason ||
+                (cancelReason === 'Otro' && !customReason.trim())
+              }
             >
               {cancellingId ? 'Cancelando...' : 'Confirmar cancelación'}
             </Button>
