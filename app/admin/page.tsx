@@ -53,6 +53,12 @@ function AdminPage() {
     const [filterCountry, setFilterCountry] = useState('');
     const [filterCity, setFilterCity] = useState('');
     // const [filterRegion, setFilterRegion] = useState(''); // descomenta si agregas la columna
+
+    const [cancelModalOpen, setCancelModalOpen] = useState(false);
+    const [selectedBookingId, setSelectedBookingId] = useState<string | null>(null);
+    const [cancelReason, setCancelReason] = useState('');
+    const [cancellingId, setCancellingId] = useState<string | null>(null);
+
     const [userRole, setUserRole] = useState<string>('usuario');
     const [activeTab, setActiveTab] = useState<'hoteles' | 'reservas'>('hoteles');
     const [bookings, setBookings] = useState<any[]>([]);
@@ -237,32 +243,54 @@ function AdminPage() {
         );
     };
 
-    const handleCancelBooking = async (bookingId: string) => {
-    const confirmed = window.confirm(
-        '¿Cancelar esta reserva?\nEl huésped verá el estado como Cancelada.'
-    );
+    const openCancelModal = (bookingId: string) => {
+        setSelectedBookingId(bookingId);
+        setCancelReason('');
+        setCancelModalOpen(true);
+    };
 
-    if (!confirmed) return;
+    const handleCancelBooking = async () => {
+        if (!selectedBookingId) return;
+        if (!cancelReason.trim()) {
+            toast.error('Debes indicar un motivo de cancelación');
+            return;
+        }
 
-    const { error } = await supabase
-        .from('bookings')
-        .update({ status: 'cancelled' })
-        .eq('id', bookingId);
+        setCancellingId(selectedBookingId);
 
-    if (error) {
-        console.error(error);
-        toast.error('No se pudo cancelar la reserva: ' + error.message);
-        return;
-    }
+        const { error } = await supabase
+            .from('bookings')
+            .update({
+                status: 'cancelled',
+                cancellation_reason: cancelReason.trim(),
+                cancelled_by: role === 'admin' ? 'admin' : 'hotelero',
+            })
+            .eq('id', selectedBookingId);
 
-    toast.success('Reserva cancelada correctamente');
+        if (error) {
+            console.error(error);
+            toast.error('No se pudo cancelar: ' + error.message);
+        } else {
+            toast.success('Reserva cancelada correctamente');
+            setBookings((prev) =>
+                prev.map((b) =>
+                    b.id === selectedBookingId
+                        ? {
+                            ...b,
+                            status: 'cancelled',
+                            cancellation_reason: cancelReason.trim(),
+                            cancelled_by: role === 'admin' ? 'admin' : 'hotelero',
+                        }
+                        : b
+                )
+            );
+            setCancelModalOpen(false);
+            setCancelReason('');
+            setSelectedBookingId(null);
+        }
 
-    setBookings((prev) =>
-        prev.map((b) =>
-            b.id === bookingId ? { ...b, status: 'cancelled' } : b
-        )
-    );
-};
+        setCancellingId(null);
+    };
 
     const canCancelBooking = (booking: any) => {
         // Solo reservas confirmadas
@@ -359,7 +387,7 @@ function AdminPage() {
 
         if (error) {
             console.error("Error al subir imagen:", error);
-            alert("Error al subir la imagen: " + error.message);
+            toast.error("Error al subir imagen: " + error.message);
             return [];
         }
 
@@ -373,8 +401,7 @@ function AdminPage() {
     // Función para agregar hotel (actualizada)
     const addHotelWithRooms = async () => {
         if (!newHotel.name || !newHotel.city || roomsToAdd.length === 0 || !user) {
-            created_by: user.id
-            alert("Faltan datos o debes estar logueado");
+            toast.error("Faltan datos o debes estar logueado");
             return;
         }
 
@@ -391,7 +418,7 @@ function AdminPage() {
             .single();
 
         if (hotelError) {
-            alert("Error creando hotel: " + hotelError.message);
+            toast.error("Error creando hotel: " + hotelError.message);
             setAdding(false);
             return;
         }
@@ -423,9 +450,9 @@ function AdminPage() {
             .insert(roomsWithHotelId);
 
         if (roomsError) {
-            alert("Hotel creado pero error en habitaciones: " + roomsError.message);
+            toast.error("Hotel creado pero error en habitaciones: " + roomsError.message);
         } else {
-            alert("Hotel y habitaciones creados correctamente!");
+            toast.success("Hotel y habitaciones creados correctamente!");
             // Limpiar formulario
             setNewHotel({ name: '', city: '', description: '', stars: 4, price_per_night_base: 0 });
             setRoomsToAdd([]);
@@ -451,9 +478,9 @@ function AdminPage() {
             .eq('id', editingHotel.id);
 
         if (error) {
-            alert("Error al actualizar: " + error.message);
+            toast.error("Error al actualizar: " + error.message);
         } else {
-            alert("Hotel actualizado correctamente");
+            toast.success("Hotel actualizado correctamente");
             setIsEditModalOpen(false);
             setEditingHotel(null);
             fetchHotels();
@@ -480,9 +507,9 @@ function AdminPage() {
             .eq('id', editingRoom.id);
 
         if (error) {
-            alert("Error al actualizar habitación: " + error.message);
+            toast.error("Error al actualizar habitación: " + error.message);
         } else {
-            alert("Habitación actualizada correctamente");
+            toast.success("Habitación actualizada correctamente");
             setIsRoomModalOpen(false);
             setEditingRoom(null);
             fetchHotels(); // recargar la lista
@@ -491,7 +518,7 @@ function AdminPage() {
 
     const addRoomToList = () => {
         if (!newRoom.name || newRoom.price_per_night <= 0) {
-            alert("Nombre y precio de habitación son obligatorios");
+            toast.error("Nombre y precio de habitación son obligatorios");
             return;
         }
         setRoomsToAdd([...roomsToAdd, { ...newRoom }]);
@@ -514,9 +541,9 @@ function AdminPage() {
 
         if (error) {
             console.error("Error completo:", error);
-            alert("Error al eliminar:\n" + error.message);
+            toast.error("Error al eliminar:\n" + error.message);
         } else {
-            alert("Hotel eliminado correctamente");
+            toast.success("Hotel eliminado correctamente");
             fetchHotels();
         }
     };
@@ -1081,10 +1108,16 @@ function AdminPage() {
                                                         size="sm"
                                                         variant="outline"
                                                         className="text-red-600 border-red-200 hover:bg-red-50"
-                                                        onClick={() => handleCancelBooking(booking.id)}
+                                                        onClick={() => openCancelModal(booking.id)}
                                                     >
                                                         Cancelar reserva
                                                     </Button>
+                                                )}
+
+                                                {booking.status === 'cancelled' && booking.cancellation_reason && (
+                                                    <p className="text-sm text-red-600 mt-2 bg-red-50 px-3 py-2 rounded-lg">
+                                                        Motivo ({booking.cancelled_by || 'sistema'}): {booking.cancellation_reason}
+                                                    </p>
                                                 )}
                                             </div>
                                         </div>
@@ -1095,6 +1128,40 @@ function AdminPage() {
                     )}
                 </div>
             )}
+
+            <Dialog open={cancelModalOpen} onOpenChange={setCancelModalOpen}>
+                <DialogContent className="max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>Cancelar reserva</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4 py-2">
+                        <p className="text-sm text-gray-600">
+                            Indica el motivo de la cancelación (se mostrará al huésped).
+                        </p>
+                        <div className="space-y-2">
+                            <Label>Motivo</Label>
+                            <textarea
+                                className="w-full min-h-[100px] border rounded-xl p-3 text-sm"
+                                placeholder="Ej: Habitación en mantenimiento, overbooking, solicitud del huésped..."
+                                value={cancelReason}
+                                onChange={(e) => setCancelReason(e.target.value)}
+                            />
+                        </div>
+                    </div>
+                    <div className="flex gap-2 justify-end pt-2">
+                        <Button variant="outline" onClick={() => setCancelModalOpen(false)}>
+                            Volver
+                        </Button>
+                        <Button
+                            variant="destructive"
+                            onClick={handleCancelBooking}
+                            disabled={cancellingId !== null || !cancelReason.trim()}
+                        >
+                            {cancellingId ? 'Cancelando...' : 'Confirmar cancelación'}
+                        </Button>
+                    </div>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }
