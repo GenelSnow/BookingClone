@@ -56,7 +56,6 @@ function AdminPage() {
 
     const [cancelModalOpen, setCancelModalOpen] = useState(false);
     const [selectedBookingId, setSelectedBookingId] = useState<string | null>(null);
-    const [cancelReason, setCancelReason] = useState('');
     const [cancellingId, setCancellingId] = useState<string | null>(null);
 
     const [userRole, setUserRole] = useState<string>('usuario');
@@ -64,6 +63,18 @@ function AdminPage() {
     const [bookings, setBookings] = useState<any[]>([]);
     const [bookingsLoading, setBookingsLoading] = useState(false);
     const [statusFilter, setStatusFilter] = useState<string>('all');
+
+    const HOTEL_REASONS = [
+        'Habitación en mantenimiento',
+        'Overbooking',
+        'Solicitud del huésped',
+        'Problema operativo del hotel',
+        'Fuerza mayor',
+        'Otro',
+    ];
+
+    const [cancelReason, setCancelReason] = useState('');
+    const [customReason, setCustomReason] = useState('');
 
 
 
@@ -262,10 +273,25 @@ function AdminPage() {
             .from('bookings')
             .update({
                 status: 'cancelled',
-                cancellation_reason: cancelReason.trim(),
+                cancellation_reason: finalReason,
                 cancelled_by: role === 'admin' ? 'admin' : 'hotelero',
             })
             .eq('id', selectedBookingId);
+
+        const finalReason =
+            cancelReason === 'Otro' ? customReason.trim() : cancelReason.trim();
+
+        if (!finalReason) {
+            toast.error(
+                cancelReason === 'Otro'
+                    ? 'Describe el motivo de cancelación'
+                    : 'Selecciona un motivo de cancelación'
+            );
+            return;
+        }
+
+        // update:
+
 
         if (error) {
             console.error(error);
@@ -1136,17 +1162,39 @@ function AdminPage() {
                     </DialogHeader>
                     <div className="space-y-4 py-2">
                         <p className="text-sm text-gray-600">
-                            Indica el motivo de la cancelación (se mostrará al huésped).
+                            Selecciona el motivo de la cancelación (se mostrará al huésped).
                         </p>
+
                         <div className="space-y-2">
                             <Label>Motivo</Label>
-                            <textarea
-                                className="w-full min-h-[100px] border rounded-xl p-3 text-sm"
-                                placeholder="Ej: Habitación en mantenimiento, overbooking, solicitud del huésped..."
+                            <select
+                                className="w-full border rounded-xl px-3 py-2.5 text-sm bg-white"
                                 value={cancelReason}
-                                onChange={(e) => setCancelReason(e.target.value)}
-                            />
+                                onChange={(e) => {
+                                    setCancelReason(e.target.value);
+                                    if (e.target.value !== 'Otro') setCustomReason('');
+                                }}
+                            >
+                                <option value="">Selecciona un motivo</option>
+                                {HOTEL_REASONS.map((r) => (
+                                    <option key={r} value={r}>
+                                        {r}
+                                    </option>
+                                ))}
+                            </select>
                         </div>
+
+                        {cancelReason === 'Otro' && (
+                            <div className="space-y-2">
+                                <Label>Describe el motivo</Label>
+                                <textarea
+                                    className="w-full min-h-[90px] border rounded-xl p-3 text-sm"
+                                    placeholder="Escribe el motivo..."
+                                    value={customReason}
+                                    onChange={(e) => setCustomReason(e.target.value)}
+                                />
+                            </div>
+                        )}
                     </div>
                     <div className="flex gap-2 justify-end pt-2">
                         <Button variant="outline" onClick={() => setCancelModalOpen(false)}>
