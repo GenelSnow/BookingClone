@@ -262,25 +262,12 @@ function AdminPage() {
 
     const handleCancelBooking = async () => {
         if (!selectedBookingId) return;
-        if (!cancelReason.trim()) {
-            toast.error('Debes indicar un motivo de cancelación');
-            return;
-        }
 
-        setCancellingId(selectedBookingId);
-
-        const { error } = await supabase
-            .from('bookings')
-            .update({
-                status: 'cancelled',
-                cancellation_reason: finalReason,
-                cancelled_by: role === 'admin' ? 'admin' : 'hotelero',
-            })
-            .eq('id', selectedBookingId);
-
+        // 1. Primero calculas el motivo final
         const finalReason =
             cancelReason === 'Otro' ? customReason.trim() : cancelReason.trim();
 
+        // 2. Luego validas
         if (!finalReason) {
             toast.error(
                 cancelReason === 'Otro'
@@ -290,8 +277,17 @@ function AdminPage() {
             return;
         }
 
-        // update:
+        setCancellingId(selectedBookingId);
 
+        // 3. Después haces el update (ya existe finalReason)
+        const { error } = await supabase
+            .from('bookings')
+            .update({
+                status: 'cancelled',
+                cancellation_reason: finalReason,
+                cancelled_by: role === 'admin' ? 'admin' : 'hotelero',
+            })
+            .eq('id', selectedBookingId);
 
         if (error) {
             console.error(error);
@@ -304,7 +300,7 @@ function AdminPage() {
                         ? {
                             ...b,
                             status: 'cancelled',
-                            cancellation_reason: cancelReason.trim(),
+                            cancellation_reason: finalReason,
                             cancelled_by: role === 'admin' ? 'admin' : 'hotelero',
                         }
                         : b
@@ -312,6 +308,7 @@ function AdminPage() {
             );
             setCancelModalOpen(false);
             setCancelReason('');
+            setCustomReason('');
             setSelectedBookingId(null);
         }
 
@@ -1203,7 +1200,11 @@ function AdminPage() {
                         <Button
                             variant="destructive"
                             onClick={handleCancelBooking}
-                            disabled={cancellingId !== null || !cancelReason.trim()}
+                            disabled={
+                                cancellingId !== null ||
+                                !cancelReason ||
+                                (cancelReason === 'Otro' && !customReason.trim())
+                            }
                         >
                             {cancellingId ? 'Cancelando...' : 'Confirmar cancelación'}
                         </Button>
