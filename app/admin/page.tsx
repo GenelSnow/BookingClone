@@ -363,33 +363,30 @@ function AdminPage() {
 
     const filteredHotels = hotels
         .filter((hotel) => {
+            const term = searchTerm.trim().toLowerCase();
+            const country = filterCountry.trim().toLowerCase();
+            const city = filterCity.trim().toLowerCase();
+
             const matchesSearch =
-                hotel.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                hotel.city?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                hotel.country?.toLowerCase().includes(searchTerm.toLowerCase());
+                !term ||
+                (hotel.name || '').toLowerCase().includes(term) ||
+                (hotel.city || '').toLowerCase().includes(term) ||
+                (hotel.country || '').toLowerCase().includes(term);
 
-            const matchesCountry = filterCountry
-                ? hotel.country?.toLowerCase() === filterCountry.toLowerCase()
-                : true;
+            const matchesCountry =
+                !country || (hotel.country || '').toLowerCase().includes(country);
 
-            const matchesCity = filterCity
-                ? hotel.city?.toLowerCase() === filterCity.toLowerCase()
-                : true;
+            const matchesCity =
+                !city || (hotel.city || '').toLowerCase().includes(city);
 
-            // const matchesRegion = filterRegion   
-            //   ? hotel.region?.toLowerCase() === filterRegion.toLowerCase()
-            //   : true;
-
-            return matchesSearch && matchesCountry && matchesCity; // && matchesRegion
+            return matchesSearch && matchesCountry && matchesCity;
         })
         .sort((a, b) => {
-            if (sortOrder === 'az') {
-                return (a.name || '').localeCompare(b.name || '', 'es');
-            }
-            return (b.name || '').localeCompare(a.name || '', 'es');
+            const nameA = (a.name || '').toLowerCase();
+            const nameB = (b.name || '').toLowerCase();
+            if (sortOrder === 'az') return nameA.localeCompare(nameB, 'es');
+            return nameB.localeCompare(nameA, 'es');
         });
-
-
 
     const uploadImage = async (hotelId: string) => {
         if (!imageFile) return [];
@@ -930,91 +927,102 @@ function AdminPage() {
 
                     <Card className="mt-10">
                         <CardHeader>
-                            <CardTitle>Hoteles y Habitaciones ({hotels.length})</CardTitle>
+                            <CardTitle>
+                                Hoteles y Habitaciones ({filteredHotels.length}
+                                {filteredHotels.length !== hotels.length ? ` de ${hotels.length}` : ''})
+                            </CardTitle>
                         </CardHeader>
                         <CardContent>
                             <div className="space-y-8">
-                                {hotels.map((hotel: any) => (
-                                    <div key={hotel.id} className="border rounded-3xl p-6 bg-white">
-                                        {/* Info del Hotel */}
-                                        <div className="flex justify-between items-start  mb-6">
-                                            <div className="flex gap-5">
-                                                {hotel.images?.[0] && (
-                                                    <img src={hotel.images[0]} alt={hotel.name} className="w-28 h-20 object-cover rounded-2xl" />
-                                                )}
-                                                <div>
-                                                    <h3 className="text-2xl font-semibold">{hotel.name}</h3>
-                                                    <p className="text-gray-600">
-                                                        {hotel.city} • {hotel.country} • {hotel.stars} ★
-                                                    </p>
-                                                    <p className="text-sm text-gray-500 mt-1">
-                                                        Creado por:{' '}
-                                                        <span className="font-medium">
-                                                            {hotel.creator?.full_name || 'Sin información'}
-                                                        </span>
-                                                        {hotel.creator?.role && (
-                                                            <span className="ml-2 text-xs bg-gray-100 px-2 py-0.5 rounded-full capitalize">
-                                                                {hotel.creator.role}
-                                                            </span>
+                                {filteredHotels.length === 0 ? (
+                                    <p className="text-center text-gray-500 py-10">
+                                        No hay hoteles que coincidan con los filtros.
+                                    </p>
+                                ) : (
+                                    <div className="space-y-8">
+                                        {filteredHotels.map((hotel: any) => (
+                                            <div key={hotel.id} className="border rounded-3xl p-6 bg-white">
+                                                {/* Info del Hotel */}
+                                                <div className="flex justify-between items-start  mb-6">
+                                                    <div className="flex gap-5">
+                                                        {hotel.images?.[0] && (
+                                                            <img src={hotel.images[0]} alt={hotel.name} className="w-28 h-20 object-cover rounded-2xl" />
                                                         )}
-                                                    </p>
-                                                    <p className="text-green-600 font-medium">
-                                                        {formatPrice(hotel.price_per_night_base)}
-                                                    </p>
-                                                </div>
-                                            </div>
-
-                                            <div className="flex gap-3">
-                                                <Button
-                                                    variant="outline"
-                                                    onClick={() => {
-                                                        setEditingHotel({ ...hotel });
-                                                        setIsEditModalOpen(true);
-                                                    }}
-                                                >
-                                                    <Pencil className="mr-2 h-4 w-4" /> Editar Hotel
-                                                </Button>
-                                                <Button
-                                                    variant="destructive"
-                                                    onClick={() => deleteHotel(hotel.id)}
-                                                >
-                                                    Eliminar
-                                                </Button>
-                                            </div>
-                                        </div>
-
-                                        {/* Habitaciones */}
-                                        <div>
-                                            <div className="flex items-center justify-between mb-4">
-                                                <h4 className="font-semibold text-lg">Habitaciones ({hotel.rooms?.length || 0})</h4>
-                                            </div>
-
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                {(hotel.rooms || []).map((room: any) => (
-                                                    <div key={room.id} className="border p-4 rounded-2xl hover:shadow-sm transition-all">
-                                                        <div className="flex justify-between">
-                                                            <div>
-                                                                <p className="font-medium">{room.name}</p>
-                                                                <p className="text-sm text-gray-600">{room.type} • {room.capacity} personas</p>
-                                                                <p className="text-green-600 font-medium">{formatPrice(room.price_per_night)} /noche</p>
-                                                            </div>
-                                                            <Button
-                                                                variant="outline"
-                                                                size="sm"
-                                                                onClick={() => {
-                                                                    setEditingRoom(room);
-                                                                    setIsRoomModalOpen(true);
-                                                                }}
-                                                            >
-                                                                Editar
-                                                            </Button>
+                                                        <div>
+                                                            <h3 className="text-2xl font-semibold">{hotel.name}</h3>
+                                                            <p className="text-gray-600">
+                                                                {hotel.city} • {hotel.country} • {hotel.stars} ★
+                                                            </p>
+                                                            <p className="text-sm text-gray-500 mt-1">
+                                                                Creado por:{' '}
+                                                                <span className="font-medium">
+                                                                    {hotel.creator?.full_name || 'Sin información'}
+                                                                </span>
+                                                                {hotel.creator?.role && (
+                                                                    <span className="ml-2 text-xs bg-gray-100 px-2 py-0.5 rounded-full capitalize">
+                                                                        {hotel.creator.role}
+                                                                    </span>
+                                                                )}
+                                                            </p>
+                                                            <p className="text-green-600 font-medium">
+                                                                {formatPrice(hotel.price_per_night_base)}
+                                                            </p>
                                                         </div>
                                                     </div>
-                                                ))}
+
+                                                    <div className="flex gap-3">
+                                                        <Button
+                                                            variant="outline"
+                                                            onClick={() => {
+                                                                setEditingHotel({ ...hotel });
+                                                                setIsEditModalOpen(true);
+                                                            }}
+                                                        >
+                                                            <Pencil className="mr-2 h-4 w-4" /> Editar Hotel
+                                                        </Button>
+                                                        <Button
+                                                            variant="destructive"
+                                                            onClick={() => deleteHotel(hotel.id)}
+                                                        >
+                                                            Eliminar
+                                                        </Button>
+                                                    </div>
+                                                </div>
+
+                                                {/* Habitaciones */}
+                                                <div>
+                                                    <div className="flex items-center justify-between mb-4">
+                                                        <h4 className="font-semibold text-lg">Habitaciones ({hotel.rooms?.length || 0})</h4>
+                                                    </div>
+
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                        {(hotel.rooms || []).map((room: any) => (
+                                                            <div key={room.id} className="border p-4 rounded-2xl hover:shadow-sm transition-all">
+                                                                <div className="flex justify-between">
+                                                                    <div>
+                                                                        <p className="font-medium">{room.name}</p>
+                                                                        <p className="text-sm text-gray-600">{room.type} • {room.capacity} personas</p>
+                                                                        <p className="text-green-600 font-medium">{formatPrice(room.price_per_night)} /noche</p>
+                                                                    </div>
+                                                                    <Button
+                                                                        variant="outline"
+                                                                        size="sm"
+                                                                        onClick={() => {
+                                                                            setEditingRoom(room);
+                                                                            setIsRoomModalOpen(true);
+                                                                        }}
+                                                                    >
+                                                                        Editar
+                                                                    </Button>
+                                                                </div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
                                             </div>
-                                        </div>
+                                        ))}
                                     </div>
-                                ))}
+                                )}
                             </div>
                         </CardContent>
                     </Card>
