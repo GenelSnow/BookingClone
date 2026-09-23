@@ -346,21 +346,6 @@ function AdminPage() {
         return <div className="p-12 text-center">Verificando permisos...</div>;
     }
 
-    const getCurrentUser = async () => {
-        const { data: { user } } = await supabase.auth.getUser();
-        setCurrentUser(user);
-
-        if (user) {
-            const { data: profile } = await supabase
-                .from('profiles')
-                .select('role')
-                .eq('id', user.id)
-                .single();
-
-            setUserRole(profile?.role || 'usuario');
-        }
-    };
-
     const filteredHotels = hotels
         .filter((hotel) => {
             const term = searchTerm.trim().toLowerCase();
