@@ -16,56 +16,44 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
-  const { error } = await supabase.auth.signUp({
-    email,
-    password,
-    options: {
-      data: { full_name: email.split('@')[0] },
-      emailRedirectTo: `${window.location.origin}/auth/callback`,
-    },
-  });
+ const handleAuth = async () => {
+  if (!email.trim() || !password.trim()) {
+    toast.error('Completa el correo y la contraseña');
+    return;
+  }
 
-  const handleAuth = async () => {
-    if (!email.trim() || !password.trim()) {
-      toast.error('Completa el correo y la contraseña');
-      return;
+  setLoading(true);
+  const supabase = createClient();
+
+  try {
+    if (isLogin) {
+      const { error } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password,
+      });
+      if (error) throw error;
+      toast.success('Sesión iniciada');
+      router.push('/');
+    } else {
+      // ✅ REGISTRO — aquí sí va el await
+      const { error } = await supabase.auth.signUp({
+        email: email.trim(),
+        password,
+        options: {
+          data: { full_name: email.split('@')[0] },
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
+        },
+      });
+      if (error) throw error;
+      toast.success('Revisa tu correo para confirmar tu cuenta');
+      setIsLogin(true);
     }
-
-    if (password.length < 6) {
-      toast.error('La contraseña debe tener al menos 6 caracteres');
-      return;
-    }
-
-    setLoading(true);
-    const supabase = createClient();
-
-    try {
-      if (isLogin) {
-        const { error } = await supabase.auth.signInWithPassword({
-          email: email.trim(),
-          password,
-        });
-        if (error) throw error;
-        toast.success('Sesión iniciada');
-        router.push('/');
-      } else {
-        const { error } = await supabase.auth.signUp({
-          email: email.trim(),
-          password,
-          options: {
-            data: { full_name: email.split('@')[0] },
-          },
-        });
-        if (error) throw error;
-        toast.success('Revisa tu correo para confirmar tu cuenta');
-        setIsLogin(true);
-      }
-    } catch (error: any) {
-      toast.error(error.message || 'Error de autenticación');
-    } finally {
-      setLoading(false);
-    }
-  };
+  } catch (error: any) {
+    toast.error(error.message || 'Error de autenticación');
+  } finally {
+    setLoading(false);
+  }
+};
 
   const handleForgotPassword = async () => {
     if (!email.trim()) {
