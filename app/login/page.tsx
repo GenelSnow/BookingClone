@@ -59,23 +59,27 @@ export default function Login() {
   };
 
   const handleForgotPassword = async () => {
-  if (!email.trim()) {
-    toast.error('Escribe tu correo');
-    return;
-  }
+    if (!email.trim()) {
+      toast.error('Escribe tu correo para recuperar la contraseña');
+      return;
+    }
 
-  const supabase = createClient();
-  const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-    redirectTo: `${window.location.origin}/actualizar-password`,
-  });
+    setLoading(true);
+    const supabase = createClient();
 
-  if (error) {
-    toast.error(error.message);
-    return;
-  }
+    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+      redirectTo: `${window.location.origin}/actualizar-password`,
+    });
 
-  toast.success('Te enviamos un enlace para restablecer la contraseña');
-};
+    setLoading(false);
+
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+
+    toast.success('Te enviamos un enlace para restablecer tu contraseña');
+  };
 
   return (
     <div className="min-h-[calc(100vh-120px)] bg-[#f5f5f5] flex flex-col">
@@ -126,7 +130,21 @@ export default function Login() {
                   onChange={(e) => setPassword(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleAuth()}
                 />
+
+                {isLogin && (
+                  <button
+                    type="button"
+                    onClick={handleForgotPassword}
+                    className="text-sm text-[#0071c2] hover:underline text-right w-full"
+                    disabled={loading}
+                  >
+                    ¿Olvidaste tu contraseña?
+                  </button>
+                )}
+
               </div>
+
+
 
               <Button
                 onClick={handleAuth}
@@ -136,8 +154,8 @@ export default function Login() {
                 {loading
                   ? 'Procesando...'
                   : isLogin
-                  ? 'Continuar con e-mail'
-                  : 'Crear cuenta'}
+                    ? 'Continuar con e-mail'
+                    : 'Crear cuenta'}
               </Button>
             </div>
 
