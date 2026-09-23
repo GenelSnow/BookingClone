@@ -125,64 +125,60 @@ export default function ReservaPage() {
   };
 
   const handleReserve = async () => {
-    if (!checkIn || !checkOut || !selectedRoom || nights <= 0) {
-      toast.error('Por favor selecciona fechas válidas y una habitación');
+  if (!checkIn || !checkOut || !selectedRoom || nights <= 0) {
+    toast.error('Por favor selecciona fechas válidas y una habitación');
+    return;
+  }
+
+  if (checkOut <= checkIn) {
+    toast.error('La fecha de salida debe ser posterior a la de entrada');
+    return;
+  }
+
+  setSubmitting(true);
+
+  try {
+    // 1. Usuario (guarda en una variable clara)
+    const { data: authData, error: authError } = await supabase.auth.getUser();
+    const currentUser = authData?.user;
+
+    if (authError || !currentUser) {
+      toast.error('Debes iniciar sesión para reservar');
+      router.push('/login');
       return;
     }
 
-    if (checkOut <= checkIn) {
-      toast.error('La fecha de salida debe ser posterior a la de entrada');
+    // 2. Solapamiento
+    const hasOverlap = await checkOverlap(selectedRoom.id, checkIn, checkOut);
+    if (hasOverlap) {
+      toast.error('Esta habitación ya está reservada en esas fechas.');
       return;
     }
 
-    setSubmitting(true);
+    // 3. Crear reserva
+    const { error } = await supabase.from('bookings').insert({
+      user_id: currentUser.id,
+      hotel_id: id,
+      room_id: selectedRoom.id,
+      check_in: checkIn.toISOString().split('T')[0],
+      check_out: checkOut.toISOString().split('T')[0],
+      total_price: totalPrice,
+      guests,
+      status: 'confirmed',
+    });
 
-
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        toast.error('Debes iniciar sesión para reservar');
-        router.push('/login');
-        return;
-      }
-
-      const hasOverlap = await checkOverlap(selectedRoom.id, checkIn, checkOut);
-      if (hasOverlap) {
-        toast.error('Esta habitación ya está reservada en esas fechas.');
-        setSubmitting(false);
-        return;
-      }
-
-      const { error } = await supabase.from('bookings').insert({
-        user_id: user.id,
-        hotel_id: id,
-        room_id: selectedRoom.id,
-        check_in: checkIn.toISOString().split('T')[0],
-        check_out: checkOut.toISOString().split('T')[0],
-        total_price: totalPrice,
-        guests,
-        status: 'confirmed',
-      });
-
-      if (error) {
-        toast.error('Error al crear la reserva: ' + error.message);
-      } else {
-        toast.success('¡Reserva confirmada exitosamente!');
-        router.push('/mis-reservas');
-      }
-    } catch (err) {
-      console.error(err);
-      toast.error('Ocurrió un error inesperado');
-    } finally {
-      setSubmitting(false);
+    if (error) {
+      toast.error('Error al crear la reserva: ' + error.message);
+      return;
     }
 
+    // 4. Email (usa currentUser, no "user")
     try {
       await fetch('/api/notify-booking', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          to: user.email,
+          to: currentUser.email,
           hotelName: hotel?.name,
           city: hotel?.city,
           roomName: selectedRoom?.name || selectedRoom?.type,
@@ -192,14 +188,20 @@ export default function ReservaPage() {
           totalPrice: formatPrice(totalPrice),
         }),
       });
-    } catch (e) {
-      console.error('No se pudo enviar el email', e);
-      // no bloquees la reserva si falla el correo
+    } catch (emailErr) {
+      console.error('No se pudo enviar el email', emailErr);
+      // No bloqueamos la reserva si falla el correo
     }
 
-    toast.success('¡Reserva confirmada!');
+    toast.success('¡Reserva confirmada exitosamente!');
     router.push('/mis-reservas');
-  };
+  } catch (err) {
+    console.error(err);
+    toast.error('Ocurrió un error inesperado');
+  } finally {
+    setSubmitting(false);
+  }
+};
 
   // Días deshabilitados: fechas pasadas + días ocupados
   const disabledDays = [
