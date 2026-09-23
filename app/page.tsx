@@ -18,6 +18,7 @@ export default function Home() {
   const [sortBy, setSortBy] = useState('recommended');
   const [loading, setLoading] = useState(true);
   const router = useRouter();
+  const [showFilters, setShowFilters] = useState(false);
 
   useEffect(() => {
     fetchHotels();
@@ -128,10 +129,8 @@ export default function Home() {
               </div>
 
               <Button
-                className="h-[56px] px-8 rounded-md bg-[#0071c2] hover:bg-[#005fa3] text-white text-[16px] font-semibold"
-                onClick={() => {
-                  /* el filtro ya es en vivo con searchTerm */
-                }}
+                className="h-[48px] sm:h-[56px] w-full md:w-auto px-6 rounded-md bg-[#0071c2] hover:bg-[#005fa3] text-white text-[15px] sm:text-[16px] font-semibold"
+                onClick={() => { }}
               >
                 <Search className="mr-2" size={20} />
                 Buscar
@@ -142,10 +141,25 @@ export default function Home() {
       </div>
 
       {/* Contenido: filtros + lista */}
-      <div className="max-w-[1100px] mx-auto px-4 py-6 flex flex-col lg:flex-row gap-6">
+      <div className="max-w-[1100px] mx-auto px-3 sm:px-4 py-4 sm:py-6 flex flex-col lg:flex-row gap-4 lg:gap-6">
+        {/* Botón filtros — solo móvil */}
+        <div className="lg:hidden">
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full border-gray-300 bg-white"
+            onClick={() => setShowFilters((v) => !v)}
+          >
+            {showFilters ? 'Ocultar filtros' : 'Mostrar filtros'}
+          </Button>
+        </div>
+
         {/* Sidebar filtros */}
-        <aside className="w-full lg:w-[260px] shrink-0">
-          <div className="bg-white border border-gray-200 rounded-lg p-4 sticky top-24">
+        <aside
+          className={`w-full lg:w-[260px] shrink-0 ${showFilters ? 'block' : 'hidden'
+            } lg:block`}
+        >
+          <div className="bg-white border border-gray-200 rounded-lg p-4 lg:sticky lg:top-24">
             <h3 className="font-bold text-[16px] mb-4 text-gray-900">Filtrar por:</h3>
 
             <div className="mb-5">
@@ -174,7 +188,7 @@ export default function Home() {
 
             <div>
               <p className="text-sm font-semibold mb-2">Estrellas</p>
-              <div className="space-y-2">
+              <div className="grid grid-cols-2 sm:grid-cols-1 gap-2">
                 {[5, 4, 3, 2, 1].map((s) => (
                   <label
                     key={s}
@@ -203,13 +217,11 @@ export default function Home() {
         {/* Resultados */}
         <main className="flex-1 min-w-0">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
-            <div>
-              <h2 className="text-xl font-bold text-gray-900">
-                Colombia: {filteredHotels.length} propiedades encontradas
-              </h2>
-            </div>
+            <h2 className="text-base sm:text-xl font-bold text-gray-900">
+              Colombia: {filteredHotels.length} propiedades
+            </h2>
             <select
-              className="border border-gray-300 rounded-md px-3 py-2 text-sm bg-white"
+              className="border border-gray-300 rounded-md px-3 py-2 text-sm bg-white w-full sm:w-auto"
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
             >
@@ -220,32 +232,30 @@ export default function Home() {
             </select>
           </div>
 
-          <div className="space-y-4">
+          <div className="space-y-3 sm:space-y-4">
             {filteredHotels.map((hotel) => (
               <article
                 key={hotel.id}
                 onClick={() => router.push(`/hoteles/${hotel.id}`)}
                 className="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition-shadow cursor-pointer flex flex-col sm:flex-row"
               >
-                {/* Imagen */}
-                <div className="sm:w-[240px] h-[180px] sm:h-auto shrink-0 bg-gray-200 relative">
+                <div className="w-full sm:w-[220px] md:w-[240px] h-44 sm:h-auto sm:min-h-[160px] shrink-0 bg-gray-200">
                   {hotel.images?.[0] ? (
                     <img
                       src={hotel.images[0]}
                       alt={hotel.name}
-                      className="w-full h-full object-cover min-h-[180px]"
+                      className="w-full h-full object-cover min-h-[176px] sm:min-h-[160px]"
                     />
                   ) : (
-                    <div className="w-full h-full min-h-[180px] flex items-center justify-center text-gray-400 text-sm">
+                    <div className="w-full h-full min-h-[176px] flex items-center justify-center text-gray-400 text-sm">
                       Sin imagen
                     </div>
                   )}
                 </div>
 
-                {/* Info */}
-                <div className="flex-1 p-4 flex flex-col sm:flex-row gap-3">
+                <div className="flex-1 p-3 sm:p-4 flex flex-col sm:flex-row gap-3 min-w-0">
                   <div className="flex-1 min-w-0">
-                    <h3 className="text-lg font-bold text-[#0071c2] hover:underline line-clamp-2">
+                    <h3 className="text-base sm:text-lg font-bold text-[#0071c2] line-clamp-2">
                       {hotel.name}
                     </h3>
                     <p className="text-sm text-[#0071c2] underline mt-0.5">
@@ -258,24 +268,23 @@ export default function Home() {
                       ))}
                     </div>
                     {hotel.description && (
-                      <p className="text-sm text-gray-600 mt-2 line-clamp-2">
+                      <p className="text-sm text-gray-600 mt-2 line-clamp-2 hidden sm:block">
                         {hotel.description}
                       </p>
                     )}
                   </div>
 
-                  {/* Score + precio */}
-                  <div className="flex sm:flex-col items-end justify-between sm:justify-start gap-3 sm:min-w-[140px]">
+                  <div className="flex sm:flex-col items-end justify-between sm:justify-start gap-2 sm:min-w-[130px]">
                     <div className="flex items-center gap-2">
                       <div className="text-right hidden sm:block">
                         <p className="text-sm font-semibold text-gray-900">
                           {(Number(hotel.rating) || 0) >= 9
                             ? 'Fabuloso'
                             : (Number(hotel.rating) || 0) >= 8
-                            ? 'Muy bien'
-                            : (Number(hotel.rating) || 0) >= 7
-                            ? 'Bien'
-                            : 'Aceptable'}
+                              ? 'Muy bien'
+                              : (Number(hotel.rating) || 0) >= 7
+                                ? 'Bien'
+                                : 'Aceptable'}
                         </p>
                         <p className="text-xs text-gray-500">
                           {hotel.review_count || 0} reseñas
@@ -286,15 +295,14 @@ export default function Home() {
                       </div>
                     </div>
 
-                    <div className="text-right mt-auto">
-                      <p className="text-xs text-gray-500">1 noche, 2 adultos</p>
-                      <p className="text-xl font-bold text-gray-900">
+                    <div className="text-right">
+                      <p className="text-xs text-gray-500">1 noche</p>
+                      <p className="text-lg sm:text-xl font-bold text-gray-900">
                         {formatPrice(hotel.price_per_night_base)}
                       </p>
-                      <p className="text-xs text-gray-500">Incluye impuestos</p>
                       <Button
                         size="sm"
-                        className="mt-2 bg-[#0071c2] hover:bg-[#005fa3] text-white font-semibold"
+                        className="mt-2 bg-[#0071c2] hover:bg-[#005fa3] text-white font-semibold w-full sm:w-auto"
                         onClick={(e) => {
                           e.stopPropagation();
                           router.push(`/hoteles/${hotel.id}`);
@@ -309,7 +317,7 @@ export default function Home() {
             ))}
 
             {filteredHotels.length === 0 && (
-              <div className="bg-white border rounded-lg p-10 text-center text-gray-500">
+              <div className="bg-white border rounded-lg p-8 sm:p-10 text-center text-gray-500">
                 No se encontraron propiedades con esos filtros.
               </div>
             )}

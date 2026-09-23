@@ -112,7 +112,7 @@ export default function HotelDetail() {
 
   return (
     <div className="min-h-screen bg-[#f5f5f5]">
-      <div className="max-w-[1100px] mx-auto px-4 py-4">
+      <div className="max-w-[1100px] mx-auto px-3 sm:px-4 py-4">
         {/* Volver */}
         <button
           type="button"
@@ -142,7 +142,7 @@ export default function HotelDetail() {
             </p>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-wrap">
             <div className="text-right">
               <p className="font-bold text-gray-900">{scoreLabel(avgRating)}</p>
               <p className="text-xs text-gray-500">{reviewCount} reseñas</p>
@@ -204,9 +204,8 @@ export default function HotelDetail() {
                 key={idx}
                 type="button"
                 onClick={() => setActiveImage(idx)}
-                className={`shrink-0 w-16 h-16 rounded overflow-hidden border-2 ${
-                  activeImage === idx ? 'border-[#0071c2]' : 'border-transparent'
-                }`}
+                className={`shrink-0 w-16 h-16 rounded overflow-hidden border-2 ${activeImage === idx ? 'border-[#0071c2]' : 'border-transparent'
+                  }`}
               >
                 <img src={img} alt="" className="w-full h-full object-cover" />
               </button>
@@ -214,11 +213,11 @@ export default function HotelDetail() {
           </div>
         )}
 
-        <div className="grid lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6">
           {/* Columna principal */}
           <div className="lg:col-span-2 space-y-6">
             {/* Descripción */}
-            <section className="bg-white border border-gray-200 rounded-lg p-5">
+            <section className="bg-white border border-gray-200 rounded-lg p-4 sm:p-5">
               <h2 className="text-lg font-bold mb-3">Descripción</h2>
               <p className="text-gray-700 leading-relaxed text-[15px]">
                 {hotel.description || 'Sin descripción disponible.'}
@@ -272,7 +271,7 @@ export default function HotelDetail() {
                           Ideal para tu estancia
                         </p>
                       </div>
-                      <div className="flex items-center gap-4 sm:flex-col sm:items-end">
+                      <div className="flex items-center gap-3 sm:flex-col sm:items-end w-full sm:w-auto">
                         <div className="text-right">
                           <p className="text-xl font-bold">
                             {formatPrice(room.price_per_night)}
@@ -280,7 +279,7 @@ export default function HotelDetail() {
                           <p className="text-xs text-gray-500">por noche</p>
                         </div>
                         <Button
-                          className="bg-[#0071c2] hover:bg-[#005fa3] text-white font-semibold"
+                          className="bg-[#0071c2] hover:bg-[#005fa3] text-white font-semibold w-full sm:w-auto"
                           onClick={() => router.push(`/reservar/${id}`)}
                         >
                           Reservar
@@ -317,11 +316,10 @@ export default function HotelDetail() {
                     <Star
                       key={star}
                       size={28}
-                      className={`cursor-pointer ${
-                        star <= newReview.rating
-                          ? 'fill-[#ffb700] text-[#ffb700]'
-                          : 'text-gray-300'
-                      }`}
+                      className={`cursor-pointer ${star <= newReview.rating
+                        ? 'fill-[#ffb700] text-[#ffb700]'
+                        : 'text-gray-300'
+                        }`}
                       onClick={() =>
                         setNewReview({ ...newReview, rating: star })
                       }
@@ -379,7 +377,7 @@ export default function HotelDetail() {
 
           {/* Sidebar reserva */}
           <aside className="lg:col-span-1">
-            <div className="bg-white border border-gray-200 rounded-lg p-5 sticky top-24 shadow-sm">
+            <div className="bg-white border border-gray-200 rounded-lg p-4 sm:p-5 lg:sticky lg:top-24 shadow-sm">
               <p className="text-sm text-gray-500">Precio desde</p>
               <p className="text-3xl font-bold text-gray-900">
                 {formatPrice(hotel.price_per_night_base)}

@@ -78,7 +78,10 @@
   --ring: oklch(0.556 0 0);
 }
 
-/* ==================== TUS ESTILOS PERSONALIZADOS ==================== */
+body {
+  @apply bg-background text-foreground overflow-x-hidden;
+}
+
 
 .custom-scrollbar::-webkit-scrollbar {
   width: 6px;

@@ -64,13 +64,15 @@ export default function Header() {
 
   return (
     <header className="bg-[#003580] text-white sticky top-0 z-50">
-      {/* Fila superior */}
-      <div className="max-w-[1100px] mx-auto px-4 py-3 flex items-center justify-between">
-        <Link href="/" className="text-[24px] font-bold tracking-tight lowercase">
+      <div className="max-w-[1100px] mx-auto px-3 sm:px-4 py-2.5 sm:py-3 flex items-center justify-between gap-2">
+        <Link
+          href="/"
+          className="text-lg sm:text-[24px] font-bold tracking-tight lowercase shrink-0"
+        >
           Booking<span className="text-[#febb02]">.com</span>
         </Link>
 
-        <div className="flex items-center gap-2 sm:gap-3">
+        <div className="flex items-center gap-1 sm:gap-2">
           <button
             type="button"
             className="hidden sm:inline-flex items-center justify-center w-9 h-9 rounded-md hover:bg-white/10"
@@ -100,7 +102,7 @@ export default function Header() {
               <button
                 type="button"
                 onClick={() => setMenuOpen(!menuOpen)}
-                className="flex items-center gap-2 hover:bg-white/10 px-2 py-1.5 rounded-md"
+                className="flex items-center gap-2 hover:bg-white/10 px-1.5 sm:px-2 py-1.5 rounded-md"
               >
                 <div className="w-8 h-8 rounded-full bg-[#0071c2] flex items-center justify-center text-sm font-semibold">
                   {(user.email?.[0] || 'U').toUpperCase()}
@@ -113,7 +115,7 @@ export default function Header() {
               {menuOpen && (
                 <>
                   <div className="fixed inset-0 z-40" onClick={() => setMenuOpen(false)} />
-                  <div className="absolute right-0 mt-2 w-64 bg-white text-gray-900 rounded-lg shadow-xl py-2 z-50 border">
+                  <div className="absolute right-0 mt-2 w-[min(100vw-1.5rem,16rem)] bg-white text-gray-900 rounded-lg shadow-xl py-2 z-50 border">
                     <div className="px-4 py-3 border-b">
                       <p className="font-semibold text-sm truncate">{user.email}</p>
                       <p className="text-xs text-gray-500 capitalize">{userRole}</p>
@@ -155,17 +157,17 @@ export default function Header() {
               )}
             </div>
           ) : (
-            <div className="flex items-center gap-2">
-              <Link href="/login">
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              <Link href="/login" className="hidden xs:block sm:block">
                 <Button
                   variant="outline"
-                  className="bg-transparent border-white text-white hover:bg-white/10 hover:text-white text-sm h-9"
+                  className="bg-transparent border-white text-white hover:bg-white/10 hover:text-white text-xs sm:text-sm h-8 sm:h-9 px-2 sm:px-3"
                 >
                   Regístrate
                 </Button>
               </Link>
               <Link href="/login">
-                <Button className="bg-white text-[#003580] hover:bg-gray-100 text-sm h-9 font-semibold">
+                <Button className="bg-white text-[#003580] hover:bg-gray-100 text-xs sm:text-sm h-8 sm:h-9 px-2.5 sm:px-3 font-semibold">
                   Inicia sesión
                 </Button>
               </Link>
@@ -174,23 +176,22 @@ export default function Header() {
         </div>
       </div>
 
-      {/* Nav secundaria tipo Booking */}
       <div className="border-t border-white/10">
-        <div className="max-w-[1100px] mx-auto px-4 flex gap-1 overflow-x-auto">
+        <div className="max-w-[1100px] mx-auto px-2 sm:px-4 flex gap-1 overflow-x-auto scrollbar-none">
           <Link
             href="/"
-            className="px-4 py-3 text-sm font-medium border-b-2 border-white whitespace-nowrap"
+            className="px-3 sm:px-4 py-2.5 sm:py-3 text-sm font-medium border-b-2 border-white whitespace-nowrap"
           >
             Alojamiento
           </Link>
-          <span className="px-4 py-3 text-sm text-white/60 whitespace-nowrap cursor-default">
+          <span className="px-3 sm:px-4 py-2.5 sm:py-3 text-sm text-white/60 whitespace-nowrap">
             Vuelos
           </span>
-          <span className="px-4 py-3 text-sm text-white/60 whitespace-nowrap cursor-default">
+          <span className="px-3 sm:px-4 py-2.5 sm:py-3 text-sm text-white/60 whitespace-nowrap">
             Vuelo + Hotel
           </span>
-          <span className="px-4 py-3 text-sm text-white/60 whitespace-nowrap cursor-default">
-            Alquiler de coches
+          <span className="px-3 sm:px-4 py-2.5 sm:py-3 text-sm text-white/60 whitespace-nowrap">
+            Coches
           </span>
         </div>
       </div>

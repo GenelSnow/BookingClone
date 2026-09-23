@@ -554,7 +554,7 @@ function AdminPage() {
     };
 
     return (
-        <div className="max-w-6xl mx-auto p-6">
+        <div className="max-w-6xl mx-auto p-3 sm:p-6">
             {/* Tabs */}
             <div className="flex gap-2 mb-8 border-b">
                 <button
@@ -577,10 +577,10 @@ function AdminPage() {
                 </button>
             </div>
 
-            <h1 className="text-4xl font-bold mb-10">Panel de Administrador</h1>
+            <h1 className="text-2xl sm:text-4xl font-bold mb-6 sm:mb-10">Panel de Administrador</h1>
 
             <div className="bg-white border rounded-2xl p-5 mb-8 space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                     <Input
                         placeholder="Buscar por nombre, ciudad o país..."
                         value={searchTerm}
@@ -618,7 +618,7 @@ function AdminPage() {
                             */}
             </div>
             {activeTab === 'hoteles' && (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+                <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 lg:gap-10">
                     {/* Formulario Crear Hotel + Habitaciones */}
                     <Card>
                         <CardHeader>
@@ -928,7 +928,7 @@ function AdminPage() {
                                         {filteredHotels.map((hotel: any) => (
                                             <div key={hotel.id} className="border rounded-3xl p-6 bg-white">
                                                 {/* Info del Hotel */}
-                                                <div className="flex justify-between items-start  mb-6">
+                                                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4 mb-6">
                                                     <div className="flex gap-5">
                                                         {hotel.images?.[0] && (
                                                             <img src={hotel.images[0]} alt={hotel.name} className="w-28 h-20 object-cover rounded-2xl" />
@@ -955,7 +955,7 @@ function AdminPage() {
                                                         </div>
                                                     </div>
 
-                                                    <div className="flex gap-3">
+                                                    <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
                                                         <Button
                                                             variant="outline"
                                                             onClick={() => {
