@@ -15,11 +15,6 @@ import {
   Bell,
 } from 'lucide-react';
 
-export const metadata: Metadata = {
-  title: 'Booking.com Clone | Hoteles y alojamientos',
-  description: 'Proyecto de graduación — clon funcional de Booking',
-};
-
 export default function Header() {
   const [user, setUser] = useState<any>(null);
   const [userRole, setUserRole] = useState<string>('usuario');
