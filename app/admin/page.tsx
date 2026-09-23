@@ -52,7 +52,7 @@ function AdminPage() {
     const [sortOrder, setSortOrder] = useState<'az' | 'za'>('az');
     const [filterCountry, setFilterCountry] = useState('');
     const [filterCity, setFilterCity] = useState('');
-    // const [filterRegion, setFilterRegion] = useState(''); // descomenta si agregas la columna
+    // const [filterRegion, setFilterRegion] = useState('');
 
     const [cancelModalOpen, setCancelModalOpen] = useState(false);
     const [selectedBookingId, setSelectedBookingId] = useState<string | null>(null);
@@ -114,7 +114,6 @@ function AdminPage() {
             return;
         }
 
-        // Traemos los perfiles de los creadores por separado
         const creatorIds = [...new Set((data || []).map(h => h.created_by).filter(Boolean))];
 
         let profilesMap: Record<string, any> = {};
@@ -131,7 +130,7 @@ function AdminPage() {
             }, {} as Record<string, any>);
         }
 
-        // Combinamos la info
+        // Combinarla info
         const hotelsWithCreator = (data || []).map(hotel => ({
             ...hotel,
             creator: hotel.created_by ? profilesMap[hotel.created_by] || null : null
@@ -279,7 +278,7 @@ function AdminPage() {
 
         setCancellingId(selectedBookingId);
 
-        // 3. Después haces el update (ya existe finalReason)
+        // 3. Después haces el update
         const { error } = await supabase
             .from('bookings')
             .update({
