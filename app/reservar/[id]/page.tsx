@@ -103,7 +103,7 @@ export default function ReservaPage() {
       ? selectedRoom.price_per_night * nights
       : 0;
 
-  // Validación de solapamiento (por si acaso)
+  // Validación de solapamiento
   const checkOverlap = async (roomId: string, start: Date, end: Date) => {
     const checkInStr = start.toISOString().split('T')[0];
     const checkOutStr = end.toISOString().split('T')[0];
@@ -136,6 +136,7 @@ export default function ReservaPage() {
     }
 
     setSubmitting(true);
+
 
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -175,6 +176,29 @@ export default function ReservaPage() {
     } finally {
       setSubmitting(false);
     }
+
+    try {
+      await fetch('/api/notify-booking', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          to: user.email,
+          hotelName: hotel?.name,
+          city: hotel?.city,
+          roomName: selectedRoom?.name || selectedRoom?.type,
+          checkIn: checkIn.toISOString().split('T')[0],
+          checkOut: checkOut.toISOString().split('T')[0],
+          guests,
+          totalPrice: formatPrice(totalPrice),
+        }),
+      });
+    } catch (e) {
+      console.error('No se pudo enviar el email', e);
+      // no bloquees la reserva si falla el correo
+    }
+
+    toast.success('¡Reserva confirmada!');
+    router.push('/mis-reservas');
   };
 
   // Días deshabilitados: fechas pasadas + días ocupados
@@ -240,11 +264,10 @@ export default function ReservaPage() {
                   {rooms.map((room) => (
                     <div
                       key={room.id}
-                      className={`p-4 border rounded-xl cursor-pointer transition-all ${
-                        selectedRoom?.id === room.id
+                      className={`p-4 border rounded-xl cursor-pointer transition-all ${selectedRoom?.id === room.id
                           ? 'border-blue-600 bg-blue-50'
                           : 'hover:border-gray-300'
-                      }`}
+                        }`}
                       onClick={() => {
                         setSelectedRoom(room);
                         // Limpiamos fechas al cambiar de habitación para evitar inconsistencias

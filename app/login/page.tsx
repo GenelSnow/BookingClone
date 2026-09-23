@@ -58,6 +58,25 @@ export default function Login() {
     }
   };
 
+  const handleForgotPassword = async () => {
+  if (!email.trim()) {
+    toast.error('Escribe tu correo');
+    return;
+  }
+
+  const supabase = createClient();
+  const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+    redirectTo: `${window.location.origin}/actualizar-password`,
+  });
+
+  if (error) {
+    toast.error(error.message);
+    return;
+  }
+
+  toast.success('Te enviamos un enlace para restablecer la contraseña');
+};
+
   return (
     <div className="min-h-[calc(100vh-120px)] bg-[#f5f5f5] flex flex-col">
       <div className="flex-1 flex items-start justify-center px-4 pt-10 pb-16">
