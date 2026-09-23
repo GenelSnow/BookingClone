@@ -16,6 +16,15 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
+  const { error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: {
+      data: { full_name: email.split('@')[0] },
+      emailRedirectTo: `${window.location.origin}/auth/callback`,
+    },
+  });
+
   const handleAuth = async () => {
     if (!email.trim() || !password.trim()) {
       toast.error('Completa el correo y la contraseña');
