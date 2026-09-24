@@ -174,6 +174,7 @@ export default function MisReservas() {
                     <h3 className="font-semibold text-xl">{booking.hotels?.name || 'Hotel'}</h3>
                     {getStatusBadge(booking.status)}
                   </div>
+                  <p className="text-xs text-gray-500 mt-2">Reservado el {new Date(booking.created_at).toLocaleDateString('es-CO', { day: 'numeric', month: 'long', year: 'numeric', hour: 'numeric', minute: 'numeric' })}</p>
                   <p className="text-gray-600 flex items-center gap-1 mb-1">
                     <MapPin size={16} /> {booking.hotels?.city}
                   </p>

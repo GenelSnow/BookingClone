@@ -28,6 +28,8 @@ export default function ReservaPage() {
   const [submitting, setSubmitting] = useState(false);
   const [occupiedDates, setOccupiedDates] = useState<Date[]>([]); // días bloqueados
 
+  
+
   useEffect(() => {
     fetchData();
   }, [id]);
